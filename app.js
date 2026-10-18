@@ -208,6 +208,13 @@ const App = {
               </div>
 
               <div class="filter-group">
+                <span class="filter-label">Disponibilidad</span>
+                <div class="chip-group">
+                  <button class="chip" :class="{ active: openNow }" @click="openNow = !openNow" type="button" title="Solo locales con horario confirmado">Abierto ahora</button>
+                </div>
+              </div>
+
+              <div class="filter-group">
                 <label class="filter-label" for="hood">Barrio</label>
                 <select id="hood" class="select" v-model="selHood">
                   <option value="">Todos los barrios</option>
@@ -334,6 +341,7 @@ const App = {
     const selMethods = ref([]);
     const selSnacks = ref([]);
     const selHood = ref('');
+    const openNow = ref(false);
     const filtersOpen = ref(false);
 
     const activeId = ref(null);
@@ -368,6 +376,7 @@ const App = {
       if (skip !== 'method' && selMethods.value.length && !selMethods.value.every(m => cafe.methods.includes(m))) return false;
       if (skip !== 'snack' && selSnacks.value.length && !selSnacks.value.every(s => cafe.snacks.includes(s))) return false;
       if (selHood.value && cafe.neighborhood !== selHood.value) return false;
+      if (openNow.value && getStatus(cafe.schedule).state !== 'open') return false;
       return true;
     }
 
@@ -389,7 +398,7 @@ const App = {
     });
 
     const activeFilterCount = computed(() =>
-      selTypes.value.length + selMethods.value.length + selSnacks.value.length + (selHood.value ? 1 : 0));
+      selTypes.value.length + selMethods.value.length + selSnacks.value.length + (selHood.value ? 1 : 0) + (openNow.value ? 1 : 0));
 
     // La plantilla desenvuelve los refs, así que el filtro se indica por nombre
     const filterRefs = { types: selTypes, methods: selMethods, snacks: selSnacks };
@@ -398,7 +407,7 @@ const App = {
       r.value = r.value.includes(value) ? r.value.filter(v => v !== value) : [...r.value, value];
     }
     function clearFilters() {
-      query.value = ''; selTypes.value = []; selMethods.value = []; selSnacks.value = []; selHood.value = '';
+      query.value = ''; selTypes.value = []; selMethods.value = []; selSnacks.value = []; selHood.value = ''; openNow.value = false;
     }
 
     const statusOf = (cafe) => getStatus(cafe.schedule);
@@ -499,7 +508,7 @@ const App = {
       WIKI_DATA, TYPE_INFO, TYPE_OPTIONS, METHOD_OPTIONS, SNACK_OPTIONS, HOOD_OPTIONS,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
-      query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
+      query, selTypes, selMethods, selSnacks, selHood, openNow, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
       filteredCafes, facet, activeFilterCount,
       toggle, clearFilters, select, closeDetail, setMobileView, openWikiMethod,
