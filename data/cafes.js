@@ -1,222 +1,1954 @@
-// ============================================================
-//  QUIERO UN CAFÉ — Real Data (Caracas)
-//  Updated with real cafes from Google Maps and structured schedules
-// ============================================================
-
+// GENERADO por scripts/build_data.py — no editar a mano (edita OVERRIDES en el script).
+// Posiciones y nombres: © colaboradores de OpenStreetMap (ODbL).
+// Tipo, métodos y snacks solo existen donde hay fuente; el resto queda vacío / sin confirmar.
 'use strict';
 
-// Helper function to generate standard schedules
-function createSchedule(openWk, closeWk, openWkend, closeWkend, closedDays = []) {
-  const days = [
-    { id: 1, name: 'Lunes' }, { id: 2, name: 'Martes' }, { id: 3, name: 'Miércoles' },
-    { id: 4, name: 'Jueves' }, { id: 5, name: 'Viernes' }, { id: 6, name: 'Sábado' }, { id: 0, name: 'Domingo' }
-  ];
-  
-  return days.map(d => {
-    const isWeekend = d.id === 0 || d.id === 6;
-    const isClosed = closedDays.includes(d.id);
-    return {
-      dayId: d.id,
-      name: d.name,
-      closed: isClosed,
-      open: isClosed ? null : (isWeekend ? openWkend : openWk),
-      close: isClosed ? null : (isWeekend ? closeWkend : closeWk)
-    };
-  });
-}
-
-/* global window */
-var CAFES_DATA = Object.freeze([
+var CAFES_DATA = [
   {
-    id: 1,
-    name: 'Páramo Café - Plaza Venezuela',
-    slogan: 'Café de especialidad en el corazón de la ciudad',
-    address: 'Av. Abraham Lincoln, Torre Phelps, Plaza Venezuela, Caracas',
-    neighborhood: 'Plaza Venezuela',
-    lat: 10.4965, lng: -66.8833,
-    schedule: createSchedule('07:00', '19:00', '08:00', '18:00'),
-    rating: 4.5, reviewCount: 1250, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'Drip', 'Marrón', 'Guayoyo', 'Cold Brew'],
-    food: ['Pastries', 'Sandwiches', 'Cachitos'],
-    wifi: true, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=80',
-    tags: ['Popular', 'Clásico', 'Reuniones'],
-    description: 'Una de las sucursales más emblemáticas de Páramo Café. Ideal para reuniones rápidas de trabajo o para hacer una pausa en el bullicio de Plaza Venezuela. Ofrecen granos andinos de excelente calidad.'
+    "id": 1,
+    "osm": "n8362532414",
+    "name": "Quiero 1 Café",
+    "type": "especialidad",
+    "typeConfirmed": true,
+    "neighborhood": "Los Palos Grandes",
+    "address": "3ª Avenida de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.499032,
+    "lng": -66.843504,
+    "schedule": null,
+    "methods": [],
+    "drinks": [
+      "Café con leche"
+    ],
+    "snacks": [
+      "Tortas"
+    ],
+    "description": "Cafetería de especialidad abierta en 2019 por René Orellana. Trabaja granos de Miranda, Trujillo, Mérida, Portuguesa y Monagas; el café con leche es lo más pedido.",
+    "sources": [
+      "https://eldiario.com/2025/10/01/del-grano-a-la-taza-cafeterias-especialidad-en-caracas/"
+    ]
   },
   {
-    id: 2,
-    name: 'Gran Café',
-    slogan: 'Historia viva de Sabana Grande',
-    address: 'Bulevar de Sabana Grande, Caracas',
-    neighborhood: 'Sabana Grande',
-    lat: 10.4939, lng: -66.8778,
-    schedule: createSchedule('07:00', '22:00', '08:00', '23:00'),
-    rating: 4.2, reviewCount: 890, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'Marrón', 'Guayoyo', 'Americano'],
-    food: ['Desayunos', 'Pastries', 'Comida local'],
-    wifi: false, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=600&q=80',
-    tags: ['Histórico', 'Al Aire Libre', 'Tradicional'],
-    description: 'Un ícono histórico del bulevar de Sabana Grande. Con décadas de tradición, es el lugar de encuentro de artistas, escritores y caraqueños que disfrutan de un buen café viendo pasar la ciudad.'
+    "id": 2,
+    "osm": "n12463595316",
+    "name": "Caracas Coffee Roasters",
+    "type": "especialidad",
+    "typeConfirmed": true,
+    "neighborhood": "Loma Azul",
+    "address": "Avenida Principal de San Luis, Loma Azul",
+    "lat": 10.46828,
+    "lng": -66.843223,
+    "schedule": null,
+    "methods": [
+      "Espresso",
+      "Guayoyo"
+    ],
+    "drinks": [
+      "Café con leche"
+    ],
+    "snacks": [
+      "Postres"
+    ],
+    "description": "Tostadora propia dentro del local y marca de granos Don Melitón (Queniquea, Táchira, y Rubio). Abrió en 2019.",
+    "sources": [
+      "https://eldiario.com/2025/10/01/del-grano-a-la-taza-cafeterias-especialidad-en-caracas/"
+    ]
   },
   {
-    id: 3,
-    name: 'Wao Café',
-    slogan: 'Innovación y sabor en cada taza',
-    address: 'Av. Principal de Bello Monte, Caracas',
-    neighborhood: 'Bello Monte',
-    lat: 10.4905, lng: -66.8752,
-    schedule: createSchedule('08:00', '20:00', '09:00', '19:00', [0]), // Cerrado domingos
-    rating: 4.7, reviewCount: 340, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'V60', 'AeroPress', 'Flat White'],
-    food: ['Pastries', 'Brunch', 'Opciones Veganas'],
-    wifi: true, petFriendly: true,
-    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80',
-    tags: ['Pet Friendly', 'Moderno', 'Brunch'],
-    description: 'Un espacio moderno en Bello Monte. Destaca por sus métodos de extracción alternativos y un ambiente ideal para nómadas digitales y amantes del café de especialidad.'
+    "id": 3,
+    "osm": "n4075471426",
+    "name": "Café Noisette",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "La Carlota",
+    "address": "Avenida Principal de La Carlota, La Carlota",
+    "lat": 10.492535,
+    "lng": -66.832974,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:30",
+        "close": "20:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:30",
+        "close": "20:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "08:30",
+        "close": "20:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": true,
+        "open": null,
+        "close": null
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Crepes",
+      "Ensaladas",
+      "Pastelería"
+    ],
+    "description": "Café de estilo francés en Campo Claro, con música de jazz varias noches a la semana. Pastelería de la vecina Pastelería Galia.",
+    "sources": [
+      "https://www.meer.com/en/60265-where-to-drink-a-good-coffee-in-caracas"
+    ]
   },
   {
-    id: 4,
-    name: 'Páramo Café - Calle Élice',
-    slogan: 'Tu parada cafetera en Chacao',
-    address: 'Calle Élice, a pasos del metro, Chacao, Caracas',
-    neighborhood: 'Chacao',
-    lat: 10.4936, lng: -66.8525,
-    schedule: createSchedule('06:30', '19:00', '08:00', '18:00'),
-    rating: 4.6, reviewCount: 820, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'Marrón', 'Guayoyo', 'Frapuccino'],
-    food: ['Pastries', 'Cachitos', 'Sandwiches'],
-    wifi: true, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&q=80',
-    tags: ['Para Llevar', 'Rápido', 'Céntrico'],
-    description: 'Ubicado estratégicamente en la Calle Élice de Chacao, es perfecto para los oficinistas y transeúntes. Servicio rápido, café venezolano de altura y excelentes dulces criollos.'
+    "id": 4,
+    "osm": "n11339206872",
+    "name": "Caffé Più",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Colinas de Bello Monte",
+    "address": "Avenida Cervante, Colinas de Bello Monte",
+    "lat": 10.485046,
+    "lng": -66.87476,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Postres",
+      "Tortas"
+    ],
+    "description": "Café de estilo italiano en Bello Monte con cerca de 20 sabores de café. Tiramisú, torta de chocolate oscuro y tres leches.",
+    "sources": [
+      "https://www.meer.com/en/60265-where-to-drink-a-good-coffee-in-caracas"
+    ]
   },
   {
-    id: 5,
-    name: 'Paramo Cafe Sambil Chacao',
-    slogan: 'Un respiro en tus compras',
-    address: 'Centro Comercial Sambil, Nivel Acuario, Chacao, Caracas',
-    neighborhood: 'Chacao (Sambil)',
-    lat: 10.4900, lng: -66.8550,
-    schedule: createSchedule('10:00', '21:00', '10:00', '21:00'),
-    rating: 4.5, reviewCount: 1100, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'Mocaccino', 'Latte', 'Frapuccino'],
-    food: ['Pastries', 'Tortas', 'Postres'],
-    wifi: true, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=600&q=80',
-    tags: ['Mall', 'Familiar', 'Postres'],
-    description: 'El clásico Páramo dentro del C.C. Sambil. El punto de encuentro ideal para descansar de las compras, con la calidad y sabor consistentes que caracterizan a la marca.'
+    "id": 5,
+    "osm": "n9584080791",
+    "name": "Páramo Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "El Silencio",
+    "address": "Avenida Universidad, El Silencio",
+    "lat": 10.504081,
+    "lng": -66.913137,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Postres",
+      "Golfeados",
+      "Sándwiches"
+    ],
+    "description": "Franquicia de café 100 % venezolano. El café es el producto estrella; también hay bebidas frías, postres y sándwiches.",
+    "sources": [
+      "https://travelfeed.com/@neruel/paramo-coffee-sambil-chacao-caracas-en-es"
+    ]
   },
   {
-    id: 6,
-    name: 'Páramo Café - Centro Comercial Tolón',
-    slogan: 'Elegancia y café de altura',
-    address: 'Tolón Fashion Mall, Piso 2, Las Mercedes, Caracas',
-    neighborhood: 'Las Mercedes',
-    lat: 10.4815, lng: -66.8582,
-    schedule: createSchedule('09:00', '20:00', '10:00', '21:00'),
-    rating: 4.6, reviewCount: 650, price: '$$$', priceLabel: 'Premium',
-    coffeeMethods: ['Espresso', 'Chemex', 'Cold Brew', 'Latte Art'],
-    food: ['Pastries', 'Gourmet', 'Macarons'],
-    wifi: true, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=600&q=80',
-    tags: ['Premium', 'Elegante', 'Mall'],
-    description: 'En el corazón de Las Mercedes, dentro del Tolón. Esta sucursal ofrece un ambiente más elegante y relajado, ideal para reuniones de negocios o una cita por la tarde.'
+    "id": 6,
+    "osm": "n12663370924",
+    "name": "Páramo Café · Tolón",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Las Mercedes",
+    "lat": 10.480808,
+    "lng": -66.860862,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Postres",
+      "Golfeados",
+      "Sándwiches"
+    ],
+    "description": "Franquicia de café 100 % venezolano. El café es el producto estrella; también hay bebidas frías, postres y sándwiches.",
+    "sources": [
+      "https://travelfeed.com/@neruel/paramo-coffee-sambil-chacao-caracas-en-es"
+    ]
   },
   {
-    id: 7,
-    name: 'Quiero1Cafe Coffee Roasters',
-    slogan: 'Maestros tostadores, pasión en tu taza',
-    address: '3ra Avenida de Los Palos Grandes, Caracas',
-    neighborhood: 'Los Palos Grandes',
-    lat: 10.5005, lng: -66.8455,
-    schedule: createSchedule('07:30', '21:00', '08:30', '20:00'),
-    rating: 4.9, reviewCount: 420, price: '$$$', priceLabel: 'Premium',
-    coffeeMethods: ['Espresso', 'V60', 'Chemex', 'AeroPress', 'Siphon'],
-    food: ['Pastries', 'Opciones Veganas', 'Sandwiches Gourmet'],
-    wifi: true, petFriendly: true,
-    image: 'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=600&q=80',
-    tags: ['Tostaduría', 'Especialidad', 'Pet Friendly'],
-    description: 'El templo del café de especialidad en Los Palos Grandes. Tuestan sus propios granos, ofrecen catas guiadas y sus baristas te preparan el café con el método manual de tu preferencia.'
+    "id": 7,
+    "osm": "n3041677759",
+    "name": "Franca",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "1ª Avenida de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.498832,
+    "lng": -66.847228,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "10:00",
+        "close": "19:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
   },
   {
-    id: 8,
-    name: 'Quadro Café',
-    slogan: 'Arte, diseño y buen café',
-    address: '2da Avenida de Los Palos Grandes, Caracas',
-    neighborhood: 'Los Palos Grandes',
-    lat: 10.5015, lng: -66.8435,
-    schedule: createSchedule('08:00', '21:00', '09:00', '22:00'),
-    rating: 4.7, reviewCount: 315, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'Latte Art', 'Cold Brew'],
-    food: ['Brunch', 'Postres', 'Tapas'],
-    wifi: true, petFriendly: true,
-    image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600&q=80',
-    tags: ['Arte', 'Diseño', 'After Office'],
-    description: 'Una mezcla perfecta entre galería de arte y cafetería de especialidad. Su diseño interior es espectacular y su menú de brunch de fin de semana es sumamente popular.'
+    "id": 8,
+    "osm": "n12663370927",
+    "name": "Franca Francesa",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Avenida Principal de las Mercedes, e/c Monterrey y Mucuchíes, Caracas 1060, Miranda, Las Mercedes",
+    "lat": 10.483425,
+    "lng": -66.863356,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
   },
   {
-    id: 9,
-    name: 'AURORA Café Restaurante',
-    slogan: 'Sabores que iluminan tu día',
-    address: '1ra Transversal de Los Palos Grandes con Av. Andrés Bello, Caracas',
-    neighborhood: 'Los Palos Grandes',
-    lat: 10.4985, lng: -66.8465,
-    schedule: createSchedule('07:00', '22:00', '08:00', '23:00'),
-    rating: 4.5, reviewCount: 510, price: '$$$', priceLabel: 'Premium',
-    coffeeMethods: ['Espresso', 'Americano', 'Capuchino'],
-    food: ['Desayunos', 'Almuerzos', 'Cenas', 'Postres'],
-    wifi: true, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1531816458010-fb7685eecbcb?w=600&q=80',
-    tags: ['Restaurante', 'Almuerzos', 'Gourmet'],
-    description: 'Más que una cafetería, es un restaurante completo. Excelente lugar para empezar con un buen café matutino y quedarse a disfrutar de una comida completa con gastronomía fusión.'
+    "id": 9,
+    "osm": "n6184602085",
+    "name": "Moka Caracas",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sabana Grande",
+    "address": "Avenida Casanova, Sabana Grande",
+    "lat": 10.492245,
+    "lng": -66.875539,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
   },
   {
-    id: 10,
-    name: 'Café Vomero',
-    slogan: 'Auténtica tradición italiana',
-    address: 'Av. Sucre de Los Dos Caminos, Sebucán, Caracas',
-    neighborhood: 'Sebucán',
-    lat: 10.4975, lng: -66.8335,
-    schedule: createSchedule('07:30', '19:00', '08:30', '18:00', [0]), // Cerrado domingos
-    rating: 4.8, reviewCount: 290, price: '$$', priceLabel: 'Moderado',
-    coffeeMethods: ['Espresso', 'Macchiato', 'Ristretto'],
-    food: ['Pastelería Italiana', 'Cannoli', 'Focaccia'],
-    wifi: true, petFriendly: true,
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
-    tags: ['Italiano', 'Cannoli', 'Tradicional'],
-    description: 'Un rinconcito de Italia en Sebucán. Famosos por servir el espresso italiano más auténtico de la zona, acompañado de cannolis y sfogliatellas frescas hechas en casa.'
+    "id": 10,
+    "osm": "n2471461502",
+    "name": "Café Versalles",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Madrid, Las Mercedes",
+    "lat": 10.483191,
+    "lng": -66.85928,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "08:00",
+        "close": "22:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Helados"
+    ],
+    "description": "",
+    "sources": []
   },
   {
-    id: 11,
-    name: 'Victoria Café',
-    slogan: 'Vistas inigualables y paz',
-    address: 'Calle San Román, Las Mercedes Sur, Caracas',
-    neighborhood: 'San Román',
-    lat: 10.4725, lng: -66.8535,
-    schedule: createSchedule('09:00', '20:00', '09:00', '21:00'),
-    rating: 4.6, reviewCount: 180, price: '$$$', priceLabel: 'Premium',
-    coffeeMethods: ['Espresso', 'Cold Brew', 'Latte'],
-    food: ['Postres', 'Brunch', 'Tapas'],
-    wifi: true, petFriendly: true,
-    image: 'https://images.unsplash.com/photo-1464979681340-bdd28a61699e?w=600&q=80',
-    tags: ['Vistas', 'Naturaleza', 'Relajante'],
-    description: 'Escondido en las colinas de San Román, ofrece una vista panorámica espectacular del valle de Caracas. Un lugar sereno, rodeado de verde, perfecto para desconectar de la ciudad.'
+    "id": 11,
+    "osm": "n2578640697",
+    "name": "Caffé de Mokambo",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Boleíta Sur",
+    "address": "Avenida Francisco de Miranda, Boleíta Sur",
+    "lat": 10.48633,
+    "lng": -66.821111,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "11:30",
+        "close": "19:30"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
   },
   {
-    id: 12,
-    name: '1875 Café',
-    slogan: 'Historia y sabor en el oeste',
-    address: 'Av. Urdaneta, Centro de Caracas',
-    neighborhood: 'Centro Histórico',
-    lat: 10.5035, lng: -66.8995,
-    schedule: createSchedule('07:00', '17:00', '08:00', '15:00', [0]),
-    rating: 4.4, reviewCount: 420, price: '$', priceLabel: 'Económico',
-    coffeeMethods: ['Espresso', 'Marrón', 'Guayoyo'],
-    food: ['Pastries', 'Desayunos Criollos', 'Empanadas'],
-    wifi: false, petFriendly: false,
-    image: 'https://images.unsplash.com/photo-1504630083234-14187a9df0f5?w=600&q=80',
-    tags: ['Centro', 'Tradición', 'Criollo'],
-    description: 'Un referente cafetero en el centro de Caracas. Con una arquitectura clásica que recuerda la época dorada de la ciudad, sirven café robusto y desayunos criollos inmejorables.'
+    "id": 12,
+    "osm": "n10960302473",
+    "name": "Socado Coffee Bar",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Calle Cali, Las Mercedes",
+    "lat": 10.479196,
+    "lng": -66.856193,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 13,
+    "osm": "n13502628501",
+    "name": "Socado Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "El Hatillo",
+    "address": "Avenida Altagracia, El Hatillo",
+    "lat": 10.43401,
+    "lng": -66.860262,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "09:00",
+        "close": "18:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 14,
+    "osm": "n13734941001",
+    "name": "Savignano",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "La Unión",
+    "address": "Calle Rosalia, La Unión",
+    "lat": 10.412757,
+    "lng": -66.825504,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "08:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "08:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "08:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "08:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "08:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "08:30",
+        "close": "19:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "09:00",
+        "close": "16:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 15,
+    "osm": "n2505232823",
+    "name": "Orleon Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "4ª Avenida de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.500184,
+    "lng": -66.84261,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 16,
+    "osm": "n2505232826",
+    "name": "Art Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "4ª Transversal de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.502734,
+    "lng": -66.845506,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 17,
+    "osm": "n2500906714",
+    "name": "Bite's",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sector Altamira",
+    "address": "Avenida San Juan Bosco, Sector Altamira",
+    "lat": 10.495873,
+    "lng": -66.84944,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 18,
+    "osm": "n2506508142",
+    "name": "Boutique Moments",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sebucán",
+    "address": "Avenida Sucre Los Dos Caminos, Sebucán",
+    "lat": 10.506144,
+    "lng": -66.831892,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 19,
+    "osm": "n2513147731",
+    "name": "Vomero Cafe",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Campo Claro",
+    "address": "Avenida Principal de Campo Claro, Campo Claro",
+    "lat": 10.492111,
+    "lng": -66.831175,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 20,
+    "osm": "n2576334414",
+    "name": "Cafetería Lecuna",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Boleíta Sur",
+    "address": "Lecuna, Boleíta Sur",
+    "lat": 10.489059,
+    "lng": -66.822249,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 21,
+    "osm": "n2801541994",
+    "name": "Buondi",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Loma Azul",
+    "address": "Avenida Principal de San Luis, Loma Azul",
+    "lat": 10.468229,
+    "lng": -66.843503,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 22,
+    "osm": "n2806453442",
+    "name": "Amicci Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Lomas del Mirador",
+    "address": "Avenida Principal de Santa Marta, Lomas del Mirador",
+    "lat": 10.477672,
+    "lng": -66.844315,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 23,
+    "osm": "n3241252664",
+    "name": "Letras Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Altagracia",
+    "address": "Bulevar Panteón, Altagracia",
+    "lat": 10.508145,
+    "lng": -66.913901,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "10:30",
+        "close": "17:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "10:30",
+        "close": "17:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "10:30",
+        "close": "17:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "10:30",
+        "close": "24:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "10:30",
+        "close": "24:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": true,
+        "open": null,
+        "close": null
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": true,
+        "open": null,
+        "close": null
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Desayunos",
+      "Postres"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 24,
+    "osm": "n3533773108",
+    "name": "Cafeteate",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "4ª Avenida de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.501423,
+    "lng": -66.842912,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 25,
+    "osm": "n4327572292",
+    "name": "Arábica Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "Avenida Andrés Bello, Los Palos Grandes",
+    "lat": 10.498193,
+    "lng": -66.84553,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 26,
+    "osm": "n4410920290",
+    "name": "Makao",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Mucuchíes, Las Mercedes",
+    "lat": 10.482162,
+    "lng": -66.862699,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "10:00",
+        "close": "22:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Ensaladas",
+      "Helados",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 27,
+    "osm": "n4410937892",
+    "name": "Te con Té",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "6ª Transversal de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.505264,
+    "lng": -66.84329,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Desayunos"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 28,
+    "osm": "n7211907967",
+    "name": "Market Dos74",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sector Altamira",
+    "address": "5ª Transversal de Altamira, Sector Altamira",
+    "lat": 10.502109,
+    "lng": -66.849716,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 29,
+    "osm": "n7399991929",
+    "name": "Bon Appétitcafé",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Avenida Veracrúz, Las Mercedes",
+    "lat": 10.47978,
+    "lng": -66.85574,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "10:00",
+        "close": "16:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 30,
+    "osm": "n7409136897",
+    "name": "Túla Café & Lounge",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "París, Las Mercedes",
+    "lat": 10.482302,
+    "lng": -66.859892,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "06:30",
+        "close": "23:30"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "06:30",
+        "close": "23:30"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "06:30",
+        "close": "23:30"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "06:30",
+        "close": "23:30"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "06:30",
+        "close": "23:30"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "06:30",
+        "close": "23:30"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 31,
+    "osm": "n9391168182",
+    "name": "Arte París Deli Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "El Silencio",
+    "address": "Avenida Este 0, El Silencio",
+    "lat": 10.506133,
+    "lng": -66.912948,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 32,
+    "osm": "n9752238430",
+    "name": "Cafetería Kaldi",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "París, Las Mercedes",
+    "lat": 10.484061,
+    "lng": -66.862801,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Ensaladas",
+      "Pastelería",
+      "Postres",
+      "Sándwiches",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 33,
+    "osm": "n9784163461",
+    "name": "Oro café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "1ª Transversal de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.498677,
+    "lng": -66.843807,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 34,
+    "osm": "n11956563220",
+    "name": "Amelie Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Palos Grandes",
+    "address": "1.ª Avenida de Los Palos Grandes, Los Palos Grandes",
+    "lat": 10.496606,
+    "lng": -66.847398,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "09:00",
+        "close": "20:30"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Ensaladas",
+      "Pastelería",
+      "Postres",
+      "Sándwiches",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 35,
+    "osm": "n12661242434",
+    "name": "Avanti Coffe",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "F4JV+WG7, Caracas 1080, Miranda, Las Mercedes",
+    "lat": 10.482352,
+    "lng": -66.856231,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 36,
+    "osm": "n12663370922",
+    "name": "ARTISANS Coffe & Shakes",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "El Rosal",
+    "address": "ente Sojo y Sorocaima, Oriental de Seguros, Avenida Venezuela, Caracas 1060, Miranda, El Rosal",
+    "lat": 10.489704,
+    "lng": -66.861476,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 37,
+    "osm": "n12663370923",
+    "name": "Birras Cafe",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Las Mercedes",
+    "address": "Frente a la Plaza Alfredo Sadel, Edificio Itaca, Avenida Principal de las Mercedes, Caracas 1060, Miranda, Las Mercedes",
+    "lat": 10.481512,
+    "lng": -66.861361,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 38,
+    "osm": "n13062206782",
+    "name": "DELICAFETTO",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "San Bernardino",
+    "address": "Avenida Cristóbal Mendoza, San Bernardino",
+    "lat": 10.514035,
+    "lng": -66.901692,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "11:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "11:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "11:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "11:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "11:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "11:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": true,
+        "open": null,
+        "close": null
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Pastelería",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 39,
+    "osm": "n13743160309",
+    "name": "Sip",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "San Román",
+    "address": "San Román",
+    "lat": 10.475812,
+    "lng": -66.858411,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 40,
+    "osm": "n14067049801",
+    "name": "Boca Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Chorros",
+    "address": "Los Chorros",
+    "lat": 10.503389,
+    "lng": -66.83159,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 41,
+    "osm": "n13915453521",
+    "name": "Café El Parque",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Ruices",
+    "address": "Los Ruices",
+    "lat": 10.486382,
+    "lng": -66.840534,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 42,
+    "osm": "n2498628572",
+    "name": "Café Ole",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sector San Marino",
+    "address": "Avenida Blandín, Sector San Marino",
+    "lat": 10.498084,
+    "lng": -66.855466,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 43,
+    "osm": "n2498743616",
+    "name": "Cool Café & Pub",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "La Castellana",
+    "address": "Avenida Eugenio Mendoza, La Castellana",
+    "lat": 10.496555,
+    "lng": -66.85114,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 44,
+    "osm": "n2438119863",
+    "name": "Versatil",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sabana Grande",
+    "address": "Coromoto, Sabana Grande",
+    "lat": 10.492042,
+    "lng": -66.87615,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 45,
+    "osm": "n2454834013",
+    "name": "Golfeados San Jacinto",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "El Silencio",
+    "address": "Avenida Sur 1, El Silencio",
+    "lat": 10.504556,
+    "lng": -66.913022,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Desayunos",
+      "Golfeados"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 46,
+    "osm": "w1040968703",
+    "name": "Chocolat Deli Cafe",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Av. Baralt (centro)",
+    "address": "Avenida Baralt, Av. Baralt (centro)",
+    "lat": 10.513097,
+    "lng": -66.916548,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Sándwiches"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 47,
+    "osm": "w739899241",
+    "name": "Café Venezuela",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Ruices",
+    "address": "Caminería del Parque, Los Ruices",
+    "lat": 10.489434,
+    "lng": -66.839374,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "08:00",
+        "close": "16:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Helados",
+      "Pastelería",
+      "Sándwiches",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 48,
+    "osm": "n2454600330",
+    "name": "Café Venezuela",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Caobos",
+    "address": "Olímpo, Los Caobos",
+    "lat": 10.494053,
+    "lng": -66.884036,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "08:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "08:00",
+        "close": "18:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 49,
+    "osm": "n2454600555",
+    "name": "Café Venezuela",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Los Rosales",
+    "address": "Avenida Los Próceres, Los Rosales",
+    "lat": 10.472962,
+    "lng": -66.894384,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "09:00",
+        "close": "21:00"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "09:00",
+        "close": "18:00"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 50,
+    "osm": "n11841838790",
+    "name": "Granier",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Av. Teherán (oeste)",
+    "address": "Avenida Teherán, Av. Teherán (oeste)",
+    "lat": 10.464205,
+    "lng": -66.9766,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:00"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": true,
+        "open": null,
+        "close": null
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": true,
+        "open": null,
+        "close": null
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Ensaladas",
+      "Pastelería",
+      "Postres",
+      "Sándwiches",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 51,
+    "osm": "n11873114066",
+    "name": "Granier",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Petare",
+    "address": "Avenida Santa María, Petare",
+    "lat": 10.499189,
+    "lng": -66.784416,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Ensaladas",
+      "Pastelería",
+      "Postres",
+      "Sándwiches",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 52,
+    "osm": "n11873114068",
+    "name": "Granier",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "El Hatillo",
+    "address": "Av. Principal de El Hatillo;Avenida Intercomunal de El Hatillo, El Hatillo",
+    "lat": 10.431475,
+    "lng": -66.855463,
+    "schedule": [
+      {
+        "dayId": 1,
+        "name": "Lunes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 2,
+        "name": "Martes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 3,
+        "name": "Miércoles",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 4,
+        "name": "Jueves",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 5,
+        "name": "Viernes",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 6,
+        "name": "Sábado",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      },
+      {
+        "dayId": 0,
+        "name": "Domingo",
+        "closed": false,
+        "open": "07:00",
+        "close": "20:30"
+      }
+    ],
+    "methods": [],
+    "drinks": [],
+    "snacks": [
+      "Ensaladas",
+      "Pastelería",
+      "Postres",
+      "Sándwiches",
+      "Tortas"
+    ],
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": 53,
+    "osm": null,
+    "name": "Gran Café",
+    "type": "cafeteria",
+    "typeConfirmed": false,
+    "neighborhood": "Sabana Grande",
+    "address": "Bulevar de Sabana Grande, Sabana Grande",
+    "lat": 10.495729,
+    "lng": -66.880192,
+    "schedule": null,
+    "methods": [],
+    "drinks": [],
+    "snacks": [],
+    "description": "Histórico café del Bulevar de Sabana Grande, fundado a finales de los años 40.",
+    "sources": [
+      "https://www.meer.com/en/60265-where-to-drink-a-good-coffee-in-caracas"
+    ]
   }
-]);
+];

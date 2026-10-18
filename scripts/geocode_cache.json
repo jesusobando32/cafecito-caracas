@@ -1,0 +1,479 @@
+{
+ "10.49903,-66.84350": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.46828,-66.84322": {
+  "neighbourhood": "Loma Azul",
+  "suburb": "Caurimare",
+  "quarter": "San Luis",
+  "city_district": null,
+  "municipality": "Parroquia El Cafetal",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.49254,-66.83297": {
+  "neighbourhood": null,
+  "suburb": null,
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.48505,-66.87476": {
+  "neighbourhood": "Colinas de Bello Monte",
+  "suburb": "Bello Monte",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.50408,-66.91314": {
+  "neighbourhood": null,
+  "suburb": "El Silencio",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Catedral",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.48081,-66.86086": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.49883,-66.84723": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.48342,-66.86336": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.49225,-66.87554": {
+  "neighbourhood": null,
+  "suburb": "Sabana Grande",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia El Recreo",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.48319,-66.85928": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.48633,-66.82111": {
+  "neighbourhood": null,
+  "suburb": "Boleíta Sur",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.47920,-66.85619": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.43401,-66.86026": {
+  "neighbourhood": "Zona Industrial La Trinidad",
+  "suburb": "La Trinidad",
+  "quarter": "Monterrey",
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.41276,-66.82550": {
+  "neighbourhood": null,
+  "suburb": "La Unión",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia El Hatillo",
+  "county": "Municipio El Hatillo",
+  "city": "Caracas"
+ },
+ "10.50018,-66.84261": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.50273,-66.84551": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.49587,-66.84944": {
+  "neighbourhood": "Sector Altamira",
+  "suburb": "Bello Campo",
+  "quarter": "La Floresta",
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.50614,-66.83189": {
+  "neighbourhood": null,
+  "suburb": "Sebucán",
+  "quarter": null,
+  "city_district": "Sector Sebucán",
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.49211,-66.83118": {
+  "neighbourhood": "Campo Claro",
+  "suburb": null,
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.48906,-66.82225": {
+  "neighbourhood": null,
+  "suburb": "Boleíta Sur",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.46823,-66.84350": {
+  "neighbourhood": "Loma Azul",
+  "suburb": "Caurimare",
+  "quarter": "San Luis",
+  "city_district": null,
+  "municipality": "Parroquia El Cafetal",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.47767,-66.84431": {
+  "neighbourhood": "Lomas del Mirador",
+  "suburb": "Caurimare",
+  "quarter": "Santa Marta",
+  "city_district": null,
+  "municipality": "Parroquia El Cafetal",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.50814,-66.91390": {
+  "neighbourhood": null,
+  "suburb": "Altagracia",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Altagracia",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.50142,-66.84291": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.49819,-66.84553": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.48216,-66.86270": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.50526,-66.84329": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.50211,-66.84972": {
+  "neighbourhood": "Sector Altamira",
+  "suburb": "Altamira",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.47978,-66.85574": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.48230,-66.85989": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.50613,-66.91295": {
+  "neighbourhood": null,
+  "suburb": "El Silencio",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Catedral",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.48406,-66.86280": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.49868,-66.84381": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.49661,-66.84740": {
+  "neighbourhood": null,
+  "suburb": "Los Palos Grandes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.48235,-66.85623": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.48970,-66.86148": {
+  "neighbourhood": null,
+  "suburb": "El Rosal",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.48151,-66.86136": {
+  "neighbourhood": null,
+  "suburb": "Las Mercedes",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.51403,-66.90169": {
+  "neighbourhood": null,
+  "suburb": "San Bernardino",
+  "quarter": null,
+  "city_district": "Parroquia San Bernardino",
+  "municipality": null,
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.47581,-66.85841": {
+  "neighbourhood": null,
+  "suburb": null,
+  "quarter": "San Román",
+  "city_district": null,
+  "municipality": "Parroquia Las Minas",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.50339,-66.83159": {
+  "neighbourhood": null,
+  "suburb": "Los Chorros",
+  "quarter": null,
+  "city_district": "Sector Los Chorros",
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.48638,-66.84053": {
+  "neighbourhood": null,
+  "suburb": "Los Ruices",
+  "quarter": "Santa Cecilia",
+  "city_district": null,
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.49808,-66.85547": {
+  "neighbourhood": "Sector San Marino",
+  "suburb": "La Castellana",
+  "quarter": null,
+  "city_district": "Sector La Castellana",
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.49656,-66.85114": {
+  "neighbourhood": null,
+  "suburb": "La Castellana",
+  "quarter": null,
+  "city_district": "Sector La Castellana",
+  "municipality": null,
+  "county": "Municipio Chacao",
+  "city": "Caracas"
+ },
+ "10.49204,-66.87615": {
+  "neighbourhood": null,
+  "suburb": "Sabana Grande",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia El Recreo",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.50456,-66.91302": {
+  "neighbourhood": null,
+  "suburb": "El Silencio",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Catedral",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.51310,-66.91655": {
+  "neighbourhood": "Sabana de Blanco",
+  "suburb": "La Pastora",
+  "quarter": "El Polvorín",
+  "city_district": null,
+  "municipality": "Parroquia La Pastora",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.48943,-66.83937": {
+  "neighbourhood": null,
+  "suburb": "Los Ruices",
+  "quarter": "Santa Cecilia",
+  "city_district": null,
+  "municipality": "Parroquia Leoncio Martínez",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.49405,-66.88404": {
+  "neighbourhood": null,
+  "suburb": "Los Caobos",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia El Recreo",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.47296,-66.89438": {
+  "neighbourhood": null,
+  "suburb": "Los Rosales",
+  "quarter": "Santa Mónica",
+  "city_district": null,
+  "municipality": "Parroquia San Pedro",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.46420,-66.97660": {
+  "neighbourhood": "Barrio Juana La Avanzadora",
+  "suburb": "Parroquia Antímano",
+  "quarter": null,
+  "city_district": null,
+  "municipality": null,
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ },
+ "10.49919,-66.78442": {
+  "neighbourhood": null,
+  "suburb": "Petare",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Petare",
+  "county": "Municipio Sucre",
+  "city": "Caracas"
+ },
+ "10.43148,-66.85546": {
+  "neighbourhood": null,
+  "suburb": null,
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia Nuestra Señora del Rosario",
+  "county": "Municipio Baruta",
+  "city": "Caracas"
+ },
+ "10.49573,-66.88019": {
+  "neighbourhood": "Las Delicias",
+  "suburb": "Sabana Grande",
+  "quarter": null,
+  "city_district": null,
+  "municipality": "Parroquia El Recreo",
+  "county": "Municipio Libertador",
+  "city": "Caracas"
+ }
+}
