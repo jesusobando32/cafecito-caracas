@@ -504,8 +504,8 @@ var CAFES_DATA = [
     "name": "Socado Café",
     "type": "cafeteria",
     "typeConfirmed": false,
-    "neighborhood": "El Hatillo",
-    "address": "Avenida Altagracia, El Hatillo",
+    "neighborhood": "La Trinidad",
+    "address": "Avenida Altagracia, La Trinidad",
     "lat": 10.43401,
     "lng": -66.860262,
     "schedule": [
