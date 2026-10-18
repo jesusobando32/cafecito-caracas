@@ -305,3 +305,6 @@ a { color: var(--caramel-dark); }
 .fav-btn.on { color: var(--red); }
 .card-status { position: absolute; right: 18px; bottom: 14px; }
 .btn-on { background: #fbe9e5; border-color: #e8b9ad; color: var(--red); }
+
+.results-row { display: flex; align-items: center; justify-content: space-between; padding-right: 18px; }
+.share { font-size: .82rem; }

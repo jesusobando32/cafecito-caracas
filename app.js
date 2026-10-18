@@ -245,7 +245,10 @@ const App = {
             </div>
           </section>
 
-          <p class="results-count" aria-live="polite"><strong>{{ filteredCafes.length }}</strong> {{ filteredCafes.length === 1 ? 'resultado' : 'resultados' }}</p>
+          <div class="results-row">
+            <p class="results-count" aria-live="polite"><strong>{{ filteredCafes.length }}</strong> {{ filteredCafes.length === 1 ? 'resultado' : 'resultados' }}</p>
+            <button class="btn-link share" @click="copyLink" type="button">{{ copied ? '¡Enlace copiado!' : 'Compartir búsqueda' }}</button>
+          </div>
 
           <ul class="cafe-list" ref="listEl">
             <li v-if="!filteredCafes.length" class="empty-state">
@@ -377,6 +380,43 @@ const App = {
     let cluster = null;
     const markers = {};
     const totalCount = CAFES_DATA.length;
+
+    // ── Enlace compartible: los filtros viven en el hash de la URL ──
+    const copied = ref(false);
+    const list = (v) => (v ? v.split(',').filter(Boolean) : []);
+    function readHash() {
+      const p = new URLSearchParams(location.hash.replace(/^#/, ''));
+      query.value = p.get('q') || '';
+      selTypes.value = list(p.get('t')).filter(t => TYPE_OPTIONS.includes(t));
+      selMethods.value = list(p.get('m')).filter(m => METHOD_OPTIONS.includes(m));
+      selSnacks.value = list(p.get('s')).filter(x => SNACK_OPTIONS.includes(x));
+      selHood.value = HOOD_OPTIONS.includes(p.get('h')) ? p.get('h') : '';
+      openNow.value = p.get('open') === '1';
+      onlyFavs.value = p.get('fav') === '1';
+      const id = Number(p.get('c'));
+      activeId.value = CAFES_DATA.some(c => c.id === id) ? id : null;
+      if (activeFilterCount.value) filtersOpen.value = true;
+    }
+    function writeHash() {
+      const p = new URLSearchParams();
+      if (query.value.trim()) p.set('q', query.value.trim());
+      if (selTypes.value.length) p.set('t', selTypes.value.join(','));
+      if (selMethods.value.length) p.set('m', selMethods.value.join(','));
+      if (selSnacks.value.length) p.set('s', selSnacks.value.join(','));
+      if (selHood.value) p.set('h', selHood.value);
+      if (openNow.value) p.set('open', '1');
+      if (onlyFavs.value) p.set('fav', '1');
+      if (activeId.value) p.set('c', activeId.value);
+      const qs = p.toString();
+      try { history.replaceState(null, '', qs ? '#' + qs : location.pathname + location.search); } catch (e) { /* file:// o iframe */ }
+    }
+    async function copyLink() {
+      writeHash();
+      try { await navigator.clipboard.writeText(location.href); }
+      catch (e) { window.prompt('Copia este enlace:', location.href); return; }
+      copied.value = true;
+      setTimeout(() => { copied.value = false; }, 1800);
+    }
 
     const activeCafe = computed(() => CAFES_DATA.find(c => c.id === activeId.value) || null);
     const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
@@ -529,6 +569,10 @@ const App = {
       map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6 });
     }
 
+    readHash();
+    watch([query, selTypes, selMethods, selSnacks, selHood, openNow, onlyFavs, activeId], writeHash);
+    window.addEventListener('hashchange', () => { readHash(); });
+
     watch(filteredCafes, () => {
       syncMarkers();
       if (!activeId.value) fitToResults();
@@ -561,6 +605,8 @@ const App = {
         });
         m.addLayer(cluster);
         syncMarkers();
+        refreshIcons();
+        if (activeCafe.value) m.setView([activeCafe.value.lat, activeCafe.value.lng], 16);
         setTimeout(() => m.invalidateSize(), 250);
       });
     });
@@ -573,7 +619,7 @@ const App = {
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
       query, selTypes, selMethods, selSnacks, selHood, openNow, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
-      filteredCafes, facet, activeFilterCount, favs, onlyFavs, isFav, toggleFav, userPos, geoMsg, locate, distanceText,
+      filteredCafes, facet, activeFilterCount, copied, copyLink, favs, onlyFavs, isFav, toggleFav, userPos, geoMsg, locate, distanceText,
       toggle, clearFilters, select, closeDetail, setMobileView, openWikiMethod,
       statusOf, directionsUrl, issueUrl, formatTime,
     };
