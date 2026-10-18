@@ -34,6 +34,13 @@ const HOOD_OPTIONS = uniqSorted(CAFES_DATA.map(c => c.neighborhood));
 // Encuadre inicial: se ajusta a todas las cafeterías (Caricuao → Petare, La Trinidad, El Hatillo)
 const ZONE_BOUNDS = L.latLngBounds(CAFES_DATA.map(c => [c.lat, c.lng])).pad(0.06);
 
+function distanceKm(a, b) {
+  const R = 6371, rad = (d) => d * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // ── Horario (siempre en hora de Caracas, UTC-4 fijo) ─────────
@@ -211,7 +218,9 @@ const App = {
                 <span class="filter-label">Disponibilidad</span>
                 <div class="chip-group">
                   <button class="chip" :class="{ active: openNow }" @click="openNow = !openNow" type="button" title="Solo locales con horario confirmado">Abierto ahora</button>
+                  <button class="chip" :class="{ active: userPos }" @click="locate" type="button" title="Ordena por distancia">Cerca de mí</button>
                 </div>
+                <p v-if="geoMsg" class="muted small">{{ geoMsg }}</p>
               </div>
 
               <div class="filter-group">
@@ -240,7 +249,7 @@ const App = {
                 <span class="card-avatar" :class="'type-' + cafe.type" aria-hidden="true" v-html="cupIcon"></span>
                 <span class="card-main">
                   <span class="card-name">{{ cafe.name }}</span>
-                  <span class="card-sub">{{ cafe.neighborhood }}</span>
+                  <span class="card-sub">{{ cafe.neighborhood }}<template v-if="userPos"> · {{ distanceText(cafe) }}</template></span>
                   <span class="card-tags">
                     <span class="tag" :class="'type-' + cafe.type">{{ TYPE_INFO[cafe.type].short }}</span>
                     <span v-for="s in cafe.snacks.slice(0, 2)" :key="s" class="tag tag-food">{{ s }}</span>
@@ -343,6 +352,9 @@ const App = {
     const selHood = ref('');
     const openNow = ref(false);
     const filtersOpen = ref(false);
+    const userPos = ref(null);
+    const geoMsg = ref('');
+    let userMarker = null;
 
     const activeId = ref(null);
     const hoverId = ref(null);
@@ -380,8 +392,39 @@ const App = {
       return true;
     }
 
-    const filteredCafes = computed(() =>
-      CAFES_DATA.filter(c => matches(c)).sort((a, b) => a.name.localeCompare(b.name, 'es')));
+    const filteredCafes = computed(() => {
+      const list = CAFES_DATA.filter(c => matches(c));
+      const me = userPos.value;
+      return me
+        ? list.sort((a, b) => distanceKm(me, a) - distanceKm(me, b))
+        : list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    });
+
+    const distanceText = (cafe) => {
+      if (!userPos.value) return '';
+      const km = distanceKm(userPos.value, cafe);
+      return km < 1 ? `${Math.round(km * 10) * 100} m` : `${km.toFixed(1)} km`;
+    };
+
+    function locate() {
+      if (userPos.value) {
+        userPos.value = null; geoMsg.value = '';
+        if (userMarker && map.value) { map.value.removeLayer(userMarker); userMarker = null; }
+        return;
+      }
+      if (!navigator.geolocation) { geoMsg.value = 'Tu navegador no permite ubicarte.'; return; }
+      geoMsg.value = 'Buscando tu ubicación…';
+      navigator.geolocation.getCurrentPosition((pos) => {
+        userPos.value = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const inZone = ZONE_BOUNDS.pad(0.5).contains([userPos.value.lat, userPos.value.lng]);
+        geoMsg.value = inZone ? '' : 'Estás lejos de Caracas; las distancias son desde tu ubicación.';
+        if (map.value) {
+          userMarker = L.circleMarker([userPos.value.lat, userPos.value.lng], { radius: 8, color: '#fff', weight: 3, fillColor: '#2f6fdb', fillOpacity: 1 }).addTo(map.value);
+          if (inZone) map.value.flyTo([userPos.value.lat, userPos.value.lng], 15, { duration: 0.8 });
+        }
+      }, () => { geoMsg.value = 'No pudimos obtener tu ubicación (revisa el permiso del navegador).'; },
+      { enableHighAccuracy: true, timeout: 10000 });
+    }
 
     // Cuántos resultados daría cada opción de filtro con el resto de filtros aplicados
     const facet = computed(() => {
@@ -510,7 +553,7 @@ const App = {
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
       query, selTypes, selMethods, selSnacks, selHood, openNow, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
-      filteredCafes, facet, activeFilterCount,
+      filteredCafes, facet, activeFilterCount, userPos, geoMsg, locate, distanceText,
       toggle, clearFilters, select, closeDetail, setMobileView, openWikiMethod,
       statusOf, directionsUrl, issueUrl, formatTime,
     };

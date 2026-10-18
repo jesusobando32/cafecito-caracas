@@ -291,3 +291,5 @@ a { color: var(--caramel-dark); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+.small { font-size: .8rem; margin: 6px 0 0; }
