@@ -1,630 +1,511 @@
 // ============================================================
-//  QUIERO UN CAFÉ — Vue 3 Application (v3.0)
-//  Real Data, Dynamic UI, Better Markers
+//  CAFECITO CARACAS — Vue 3 + Leaflet
+//  Buscador de cafeterías de Caracas (Caricuao → Petare, La Trinidad, El Hatillo)
 // ============================================================
 
 'use strict';
 
-// ── Defensive guards — fail fast with clear error messages ───
-if (typeof Vue === 'undefined') {
-  throw new Error('[Quiero un Café] Vue 3 not loaded. Check CDN link in index.html');
-}
-if (typeof L === 'undefined') {
-  throw new Error('[Quiero un Café] Leaflet not loaded. Check CDN link in index.html');
-}
+if (typeof Vue === 'undefined') throw new Error('[Cafecito] Vue 3 no cargó. Revisa los <script> de index.html');
+if (typeof L === 'undefined') throw new Error('[Cafecito] Leaflet no cargó. Revisa los <script> de index.html');
 if (typeof CAFES_DATA === 'undefined' || !Array.isArray(CAFES_DATA)) {
-  throw new Error('[Quiero un Café] CAFES_DATA not found. Ensure data/cafes.js loads before app.js');
+  throw new Error('[Cafecito] CAFES_DATA no existe. data/cafes.js debe cargar antes que app.js');
 }
 
-// ── Destructure Vue 3 APIs from the global Vue build ────────
-const {
-  createApp, ref, computed, watch, nextTick, shallowRef, onMounted, onUnmounted
-} = Vue;
+const { createApp, ref, computed, watch, nextTick, shallowRef, onMounted, onUnmounted } = Vue;
 
-// ════════════════════════════════════════════════════════════
-//  CONSTANTS & MOCK MENUS/GALLERIES
-// ════════════════════════════════════════════════════════════
+// ── Constantes ───────────────────────────────────────────────
+const REPO_URL = 'https://github.com/jesusobando32/cafecito-caracas';
+const CUP_SVG = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2"/><path d="M8 3v2M12 3v2"/></svg>';
+// CARTO exige API key desde 2025; OSM estándar sigue siendo gratuito con atribución (uso ligero).
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-const RATING_OPTIONS = [
-  { label: 'Todos', value: 0 },
-  { label: '4+',    value: 4 },
-  { label: '4.5+',  value: 4.5 },
-  { label: '4.8+',  value: 4.8 },
-];
-const PRICE_OPTIONS = ['$', '$$', '$$$'];
-const METHOD_OPTIONS = [...new Set(CAFES_DATA.flatMap(c => c.coffeeMethods))].sort();
-const FOOD_OPTIONS = [...new Set(CAFES_DATA.flatMap(c => c.food))].sort();
+const TYPE_INFO = {
+  especialidad: { label: 'Café de especialidad', short: 'Especialidad' },
+  cafeteria:    { label: 'Cafetería',            short: 'Cafetería' },
+};
+const TYPE_OPTIONS = ['cafeteria', 'especialidad'];
 
-function starsFromRating(rating) {
-  const full = Math.round(rating);
-  return '★'.repeat(Math.max(0, full)) + '☆'.repeat(Math.max(0, 5 - full));
+const uniqSorted = (arr) => [...new Set(arr)].sort((a, b) => a.localeCompare(b, 'es'));
+const METHOD_OPTIONS = uniqSorted(CAFES_DATA.flatMap(c => c.methods));
+const SNACK_OPTIONS = uniqSorted(CAFES_DATA.flatMap(c => c.snacks));
+const HOOD_OPTIONS = uniqSorted(CAFES_DATA.map(c => c.neighborhood));
+
+// Encuadre inicial: se ajusta a todas las cafeterías (Caricuao → Petare, La Trinidad, El Hatillo)
+const ZONE_BOUNDS = L.latLngBounds(CAFES_DATA.map(c => [c.lat, c.lng])).pad(0.06);
+
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// ── Horario (siempre en hora de Caracas, UTC-4 fijo) ─────────
+function caracasNow() {
+  const d = new Date(Date.now() - 4 * 3600 * 1000);
+  return { day: d.getUTCDay(), minutes: d.getUTCHours() * 60 + d.getUTCMinutes() };
 }
-
-// Helper to determine if a cafe is currently open
-function getCafeStatus(schedule) {
-  if (!schedule) return { isOpen: false, text: 'Horario no disponible' };
-  
-  const now = new Date();
-  const currentDayId = now.getDay(); // 0 = Sunday, 1 = Monday...
-  const currentHourStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-  
-  const todaySchedule = schedule.find(s => s.dayId === currentDayId);
-  if (!todaySchedule || todaySchedule.closed) {
-    return { isOpen: false, text: 'Cerrado ahora' };
-  }
-  
-  if (currentHourStr >= todaySchedule.open && currentHourStr <= todaySchedule.close) {
-    return { isOpen: true, text: `Abierto hasta las ${formatTime(todaySchedule.close)}` };
-  }
-  return { isOpen: false, text: 'Cerrado ahora' };
-}
+const toMinutes = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 
 function formatTime(time24) {
   if (!time24) return '';
   const [h, m] = time24.split(':');
-  let hours = parseInt(h, 10);
+  const hours = parseInt(h, 10) % 24;
   const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  return `${hours}:${m} ${ampm}`;
+  return `${hours % 12 || 12}:${m} ${ampm}`;
 }
 
-// Generate dynamic menus for all 12 cafes
-const CAFE_MENUS = {};
-const defaultMenuItems = [
-  { name: 'Espresso', price: '$2.00', desc: 'Sabor intenso y concentrado' },
-  { name: 'Latte', price: '$3.50', desc: 'Espresso con leche cremosa' },
-  { name: 'Cold Brew', price: '$4.00', desc: 'Extracción en frío por 18h' },
-  { name: 'Croissant', price: '$2.50', desc: 'De mantequilla, horneado hoy' },
-  { name: 'Tostada de Aguacate', price: '$5.00', desc: 'Pan de masa madre, aguacate fresco' }
-];
-CAFES_DATA.forEach(c => { CAFE_MENUS[c.id] = defaultMenuItems; });
-
-// Generate galleries for all 12 cafes
-const CAFE_GALLERIES = {};
-const galleryPool = [
-  'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&q=75',
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&q=75',
-  'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=400&q=75',
-  'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&q=75',
-  'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=400&q=75'
-];
-CAFES_DATA.forEach(c => { 
-  // Pick 3 random images for gallery
-  CAFE_GALLERIES[c.id] = [galleryPool[c.id%5], galleryPool[(c.id+1)%5], galleryPool[(c.id+2)%5]]; 
-});
-
-// XSS-safe popup DOM builder
-function buildPopupDOM(cafe, onDetailClick) {
-  const root = document.createElement('div');
-  root.className = 'map-popup';
-
-  const nameEl = document.createElement('p');
-  nameEl.className = 'popup-name';
-  nameEl.textContent = cafe.name;
-
-  const status = getCafeStatus(cafe.schedule);
-  const statusEl = document.createElement('p');
-  statusEl.className = 'popup-neighborhood';
-  statusEl.style.color = status.isOpen ? '#059669' : '#dc2626';
-  statusEl.textContent = `📍 ${cafe.neighborhood} • ${status.text}`;
-
-  const metaRow = document.createElement('div');
-  metaRow.className = 'popup-meta-row';
-
-  const starsWrap = document.createElement('span');
-  const starsEl = document.createElement('span');
-  starsEl.className = 'popup-stars';
-  starsEl.textContent = starsFromRating(cafe.rating);
-  
-  const ratingNum = document.createElement('span');
-  ratingNum.className = 'popup-rating-num';
-  ratingNum.textContent = cafe.rating.toFixed(1);
-  
-  starsWrap.appendChild(starsEl);
-  starsWrap.appendChild(ratingNum);
-
-  const priceEl = document.createElement('span');
-  priceEl.className = 'popup-price';
-  priceEl.textContent = cafe.price;
-
-  metaRow.appendChild(starsWrap);
-  metaRow.appendChild(priceEl);
-
-  const btn = document.createElement('button');
-  btn.className = 'popup-detail-btn';
-  btn.textContent = 'Ver detalles →';
-  btn.setAttribute('type', 'button');
-  btn.addEventListener('click', onDetailClick);
-
-  root.appendChild(nameEl);
-  root.appendChild(statusEl);
-  root.appendChild(metaRow);
-  root.appendChild(btn);
-
-  return root;
+function getStatus(schedule) {
+  if (!schedule) return { state: 'unknown', text: 'Horario sin confirmar' };
+  const { day, minutes } = caracasNow();
+  const today = schedule.find(s => s.dayId === day);
+  if (!today || today.closed) return { state: 'closed', text: 'Cerrado hoy' };
+  const open = toMinutes(today.open), close = toMinutes(today.close);
+  if (minutes >= open && minutes < close) return { state: 'open', text: `Abierto hasta las ${formatTime(today.close)}` };
+  if (minutes < open) return { state: 'closed', text: `Abre hoy a las ${formatTime(today.open)}` };
+  return { state: 'closed', text: 'Cerrado ahora' };
 }
 
-function createMarkerIcon(cafe, highlighted = false) {
-  const maxLen = 18;
-  const label = cafe.name.length > maxLen ? cafe.name.slice(0, maxLen - 1) + '…' : cafe.name;
-  const highlightClass = highlighted ? 'is-highlighted' : '';
-  const escapedLabel = label.replace(/[&<>"']/g, match => {
-    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[match];
-  });
-  
-  // Real map marker aesthetic
-  const html = `<div class="custom-marker-wrap">
-    <div class="marker-label ${highlightClass}" role="img" aria-label="${escapedLabel}">
-      <span class="marker-icon">☕</span> ${escapedLabel}
-    </div>
-  </div>`;
-
+// ── Marcadores ───────────────────────────────────────────────
+function createMarkerIcon(cafe, selected) {
   return L.divIcon({
-    html,
-    className: '',
-    iconSize: [140, 40],
-    iconAnchor: [70, 40],
-    popupAnchor: [0, -42],
+    html: `<span class="pin pin-${cafe.type}${selected ? ' is-selected' : ''}" aria-hidden="true">${CUP_SVG}</span>`,
+    className: 'pin-wrap',
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
   });
 }
 
+function clusterIcon(cluster) {
+  const n = cluster.getChildCount();
+  return L.divIcon({
+    html: `<span class="cluster">${n}</span>`,
+    className: 'cluster-wrap',
+    iconSize: [40, 40],
+  });
+}
 
-// ════════════════════════════════════════════════════════════
-//  ROOT VUE COMPONENT
+function issueUrl(cafe) {
+  const title = `Completar datos: ${cafe.name} (${cafe.neighborhood})`;
+  const body = [
+    `Local: ${cafe.name}`, `Barrio: ${cafe.neighborhood}`, '',
+    '- Tipo (cafetería / café de especialidad):',
+    '- Métodos de preparación (espresso, V60, Chemex…):',
+    '- Snacks:', '- Horario:', '- Fuente (web, Instagram, visita propia):',
+  ].join('\n');
+  return `${REPO_URL}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+}
+
 // ════════════════════════════════════════════════════════════
 const App = {
   template: `
-    <header class="app-header" role="banner">
-      <a class="app-logo" href="#" @click.prevent="currentView = 'home'" aria-label="Quiero un Café — Inicio">
-        <span class="app-logo-icon" aria-hidden="true">☕</span>
-        <span class="app-logo-text">Quiero un <span class="accent">café</span></span>
+    <header class="app-header">
+      <a class="app-logo" href="./" @click.prevent="view = 'map'" aria-label="Cafecito Caracas">
+        <span class="app-logo-icon" aria-hidden="true" v-html="cupIcon"></span>
+        <span class="app-logo-text">Cafecito <em>Caracas</em></span>
       </a>
-      
-      <!-- Navegación Principal -->
-      <nav class="main-nav">
-        <button 
-          class="nav-btn" 
-          :class="{ active: currentView === 'home' }" 
-          @click="currentView = 'home'"
-        >📍 Mapa de Cafeterías</button>
-        <button 
-          class="nav-btn" 
-          :class="{ active: currentView === 'wiki' }" 
-          @click="currentView = 'wiki'"
-        >📖 Cultura y Aprender</button>
+      <nav class="main-nav" aria-label="Secciones">
+        <button class="nav-btn" :class="{ active: view === 'map' }" @click="view = 'map'" type="button">Mapa</button>
+        <button class="nav-btn" :class="{ active: view === 'wiki' }" @click="view = 'wiki'" type="button">Aprende</button>
       </nav>
-
-      <div class="header-right">
-        <span class="header-badge" aria-live="polite">
-          <span class="header-badge-text">Caracas · </span>
-          {{ filteredCafes.length }}/{{ totalCount }} cafés
-        </span>
-      </div>
+      <span class="header-badge" aria-live="polite">{{ filteredCafes.length }} de {{ totalCount }}</span>
     </header>
 
-    <!-- ── VISTA PRINCIPAL: MAPA Y DIRECTORIO ──────────────── -->
-    <div v-show="currentView === 'home'" class="app-body">
-      
-      <!-- PANEL LATERAL IZQUIERDO: DIRECTORIO -->
-      <aside class="sidebar" aria-label="Filtros">
-        <section class="filter-panel" aria-label="Panel de filtros">
-          <div class="search-wrap" style="margin-bottom: 8px;">
-            <span class="search-icon" aria-hidden="true">🔍</span>
-            <input id="cafe-search" class="search-input" type="search" v-model="searchQuery" placeholder="Buscar cafetería..." autocomplete="off" />
-            <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''" type="button">✕</button>
-          </div>
-          <div class="filter-row">
-            <div class="filter-group">
-              <span class="filter-label">⭐ Calificación</span>
-              <div class="pill-group">
-                <button v-for="opt in RATING_OPTIONS" :key="opt.value" class="pill" :class="{ active: minRating === opt.value }" @click="minRating = opt.value" type="button">{{ opt.label }}</button>
-              </div>
-            </div>
-            <div class="filter-group">
-              <span class="filter-label">💰 Precio</span>
-              <div class="pill-group">
-                <button v-for="p in PRICE_OPTIONS" :key="p" class="pill" :class="{ active: selectedPrices.includes(p) }" @click="togglePrice(p)" type="button">{{ p }}</button>
-              </div>
-            </div>
-            <div class="filter-group">
-              <span class="filter-label">☕ Método</span>
-              <div class="pill-group">
-                <button v-for="m in METHOD_OPTIONS" :key="m" class="pill" :class="{ active: selectedMethods.includes(m) }" @click="toggleMethod(m)" type="button">{{ m }}</button>
-              </div>
-            </div>
-            <Transition name="fade">
-              <button v-if="hasActiveFilters" class="btn-clear-filters" @click="clearFilters" type="button">✕ Limpiar</button>
-            </Transition>
-          </div>
-        </section>
+    <!-- ═════════ MAPA ═════════ -->
+    <div v-show="view === 'map'" class="app-body" :class="'mobile-' + mobileView">
+      <aside class="sidebar" aria-label="Cafeterías">
 
-        <div class="results-header" aria-live="polite">
-          <p class="results-count">
-            <span class="count-num">{{ filteredCafes.length }}</span> resultados
+        <!-- Detalle de una cafetería -->
+        <article v-if="activeCafe" class="detail" aria-live="polite">
+          <button class="detail-back" @click="closeDetail" type="button">← Volver a la lista</button>
+
+          <header class="detail-head">
+            <span class="type-chip" :class="'type-' + activeCafe.type">{{ TYPE_INFO[activeCafe.type].label }}</span>
+            <span v-if="!activeCafe.typeConfirmed" class="tag tag-muted" title="La categoría aún no tiene fuente">por confirmar</span>
+            <h1 class="detail-name">{{ activeCafe.name }}</h1>
+            <p class="detail-address">📍 {{ activeCafe.address }}</p>
+            <div class="status" :class="'status-' + activeStatus.state"><span class="status-dot"></span>{{ activeStatus.text }}</div>
+          </header>
+
+          <p v-if="activeCafe.description" class="detail-desc">{{ activeCafe.description }}</p>
+
+          <section class="detail-section">
+            <h2 class="detail-label">Métodos de preparación</h2>
+            <div v-if="activeCafe.methods.length" class="tag-row">
+              <button v-for="m in activeCafe.methods" :key="m" class="tag tag-method" @click="openWikiMethod(m)" type="button" title="Aprende sobre este método">{{ m }}</button>
+            </div>
+            <p v-else class="muted">Sin confirmar.</p>
+          </section>
+
+          <section v-if="activeCafe.drinks.length" class="detail-section">
+            <h2 class="detail-label">Bebidas destacadas</h2>
+            <div class="tag-row"><span v-for="d in activeCafe.drinks" :key="d" class="tag">{{ d }}</span></div>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="detail-label">Snacks y comida</h2>
+            <div v-if="activeCafe.snacks.length" class="tag-row"><span v-for="s in activeCafe.snacks" :key="s" class="tag tag-food">{{ s }}</span></div>
+            <p v-else class="muted">Sin confirmar.</p>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="detail-label">Horario</h2>
+            <ul v-if="activeCafe.schedule" class="schedule">
+              <li v-for="day in activeCafe.schedule" :key="day.dayId" :class="{ 'is-today': day.dayId === todayId }">
+                <span>{{ day.name }}</span>
+                <span v-if="!day.closed">{{ formatTime(day.open) }} – {{ formatTime(day.close) }}</span>
+                <span v-else class="muted">Cerrado</span>
+              </li>
+            </ul>
+            <p v-else class="muted">Sin horario confirmado.</p>
+          </section>
+
+          <div class="detail-actions">
+            <a class="btn btn-primary" :href="directionsUrl(activeCafe)" target="_blank" rel="noopener">Cómo llegar</a>
+            <a class="btn" :href="issueUrl(activeCafe)" target="_blank" rel="noopener">¿Falta algo? Aporta datos</a>
+          </div>
+          <p v-if="activeCafe.sources.length" class="detail-sources">
+            Fuentes:
+            <template v-for="(s, i) in activeCafe.sources" :key="s"><a :href="s" target="_blank" rel="noopener">[{{ i + 1 }}]</a> </template>
           </p>
-        </div>
+        </article>
 
-        <main id="cafe-list" class="cafe-list" tabindex="-1">
-          <div v-if="filteredCafes.length === 0" class="empty-state">
-            <div class="empty-icon" aria-hidden="true">🫙</div>
-            <p class="empty-title">Sin resultados</p>
-            <p class="empty-sub">Prueba con otros filtros.</p>
-          </div>
+        <!-- Filtros y lista -->
+        <template v-else>
+          <section class="filters" aria-label="Filtros">
+            <div class="search-wrap">
+              <span class="search-icon" aria-hidden="true">🔍</span>
+              <input class="search-input" type="search" v-model="query" placeholder="Buscar por nombre, barrio, snack…" autocomplete="off" aria-label="Buscar cafetería" />
+            </div>
 
-          <TransitionGroup name="card-list" tag="div" style="position: relative;">
-            <article
-              v-for="cafe in filteredCafes"
-              :key="cafe.id"
-              class="cafe-card"
-              :class="{'is-selected': activeCafeId === cafe.id, 'is-map-highlighted': highlightedCafeId === cafe.id}"
-              @click="openDetail(cafe)"
-              @keydown.enter.prevent="openDetail(cafe)"
-              :ref="el => registerCardRef(cafe.id, el)"
-              tabindex="0"
-              role="button"
-            >
-              <div class="card-img-wrap">
-                <img :src="cafe.image" :alt="cafe.name" class="card-img" loading="lazy" />
-                <div class="card-img-overlay"></div>
-                <span class="card-price-badge">{{ cafe.price }}</span>
-              </div>
-              <div class="card-body">
-                <h3 class="card-name">{{ cafe.name }}</h3>
-                <p class="card-neighborhood">📍 {{ cafe.neighborhood }}</p>
-                <div class="card-meta-row">
-                  <span class="stars">{{ starsFromRating(cafe.rating) }}</span>
-                  <span class="rating-num">{{ cafe.rating.toFixed(1) }}</span>
-                </div>
-                <!-- Open/Closed indicator on card -->
-                <div class="status-badge" :class="getCafeStatus(cafe.schedule).isOpen ? 'open' : 'closed'">
-                  <div class="status-dot"></div>
-                  {{ getCafeStatus(cafe.schedule).text }}
+            <button class="filters-toggle" type="button" @click="filtersOpen = !filtersOpen" :aria-expanded="filtersOpen">
+              Filtros <span v-if="activeFilterCount" class="badge">{{ activeFilterCount }}</span>
+              <span class="chev">{{ filtersOpen ? '▴' : '▾' }}</span>
+            </button>
+
+            <div class="filters-body" :class="{ open: filtersOpen }">
+              <div class="filter-group">
+                <span class="filter-label">Tipo de local</span>
+                <div class="chip-group">
+                  <button v-for="t in TYPE_OPTIONS" :key="t" class="chip" :class="{ active: selTypes.includes(t), empty: !facet.type[t] && !selTypes.includes(t) }" @click="toggle('types', t)" type="button">
+                    {{ TYPE_INFO[t].short }} <small>{{ facet.type[t] || 0 }}</small>
+                  </button>
                 </div>
               </div>
-            </article>
-          </TransitionGroup>
-        </main>
+
+              <div class="filter-group" v-if="METHOD_OPTIONS.length">
+                <span class="filter-label">Método de preparación</span>
+                <div class="chip-group">
+                  <button v-for="m in METHOD_OPTIONS" :key="m" class="chip" :class="{ active: selMethods.includes(m), empty: !facet.method[m] && !selMethods.includes(m) }" @click="toggle('methods', m)" type="button">
+                    {{ m }} <small>{{ facet.method[m] || 0 }}</small>
+                  </button>
+                </div>
+              </div>
+
+              <div class="filter-group" v-if="SNACK_OPTIONS.length">
+                <span class="filter-label">Snacks y comida</span>
+                <div class="chip-group">
+                  <button v-for="s in SNACK_OPTIONS" :key="s" class="chip" :class="{ active: selSnacks.includes(s), empty: !facet.snack[s] && !selSnacks.includes(s) }" @click="toggle('snacks', s)" type="button">
+                    {{ s }} <small>{{ facet.snack[s] || 0 }}</small>
+                  </button>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="hood">Barrio</label>
+                <select id="hood" class="select" v-model="selHood">
+                  <option value="">Todos los barrios</option>
+                  <option v-for="h in HOOD_OPTIONS" :key="h" :value="h">{{ h }}</option>
+                </select>
+              </div>
+
+              <button v-if="activeFilterCount || query" class="btn-link" @click="clearFilters" type="button">✕ Limpiar filtros</button>
+            </div>
+          </section>
+
+          <p class="results-count" aria-live="polite"><strong>{{ filteredCafes.length }}</strong> {{ filteredCafes.length === 1 ? 'resultado' : 'resultados' }}</p>
+
+          <ul class="cafe-list" ref="listEl">
+            <li v-if="!filteredCafes.length" class="empty-state">
+              <p class="empty-title">Ninguna cafetería coincide</p>
+              <p class="muted">Prueba con menos filtros. Si un dato falta en el mapa, puedes aportarlo desde la ficha de cada local.</p>
+              <button class="btn" @click="clearFilters" type="button">Limpiar filtros</button>
+            </li>
+            <li v-for="cafe in filteredCafes" :key="cafe.id">
+              <button class="cafe-card" :class="{ 'is-hover': hoverId === cafe.id }" type="button"
+                      @click="select(cafe)" @mouseenter="hoverId = cafe.id" @mouseleave="hoverId = null">
+                <span class="card-avatar" :class="'type-' + cafe.type" aria-hidden="true" v-html="cupIcon"></span>
+                <span class="card-main">
+                  <span class="card-name">{{ cafe.name }}</span>
+                  <span class="card-sub">{{ cafe.neighborhood }}</span>
+                  <span class="card-tags">
+                    <span class="tag" :class="'type-' + cafe.type">{{ TYPE_INFO[cafe.type].short }}</span>
+                    <span v-for="s in cafe.snacks.slice(0, 2)" :key="s" class="tag tag-food">{{ s }}</span>
+                  </span>
+                </span>
+                <span class="card-status status" :class="'status-' + statusOf(cafe).state" :title="statusOf(cafe).text"><span class="status-dot"></span></span>
+              </button>
+            </li>
+          </ul>
+        </template>
       </aside>
 
-      <!-- MAPA CENTRAL -->
-      <div id="map-container">
-        <div id="map"></div>
-        <div class="map-hint-badge" v-if="!activeCafeId">🗺️ Haz clic en un marcador para explorar</div>
+      <section class="map-pane" aria-label="Mapa">
+        <div id="map" role="application" aria-label="Mapa de cafeterías de Caracas"></div>
+        <div class="map-legend" aria-hidden="true">
+          <span><i class="pin-dot pin-especialidad"></i> Especialidad</span>
+          <span><i class="pin-dot pin-cafeteria"></i> Cafetería</span>
+        </div>
+      </section>
+
+      <div class="mobile-switch" role="tablist" aria-label="Vista">
+        <button :class="{ active: mobileView === 'list' }" @click="setMobileView('list')" type="button">☰ Lista</button>
+        <button :class="{ active: mobileView === 'map' }" @click="setMobileView('map')" type="button">🗺️ Mapa</button>
       </div>
-
-      <!-- PANEL LATERAL DERECHO: DETALLES DE CAFETERÍA (Reemplaza al Modal) -->
-      <Transition name="slide-right">
-        <aside class="detail-sidebar" v-if="activeCafe">
-          <div class="detail-hero">
-            <img :src="activeCafe.image" :alt="activeCafe.name" class="detail-hero-img" />
-            <div class="detail-hero-gradient"></div>
-            <div class="detail-hero-content">
-              <h1 class="detail-cafe-name">{{ activeCafe.name }}</h1>
-              <p class="detail-cafe-slogan">{{ activeCafe.slogan }}</p>
-            </div>
-            <button class="btn-modal-close" @click="closeDetail" ref="closeButtonRef" aria-label="Cerrar panel">✕</button>
-          </div>
-
-          <div class="detail-body">
-            <div class="detail-meta-strip">
-              <div class="detail-rating-group">
-                <span class="detail-stars">{{ starsFromRating(activeCafe.rating) }}</span>
-                <span class="detail-rating-num">{{ activeCafe.rating.toFixed(1) }} ({{ activeCafe.reviewCount }})</span>
-              </div>
-              <span class="detail-price-chip">{{ activeCafe.price }} · {{ activeCafe.priceLabel }}</span>
-            </div>
-
-            <!-- Horario Visual -->
-            <section class="detail-section">
-              <p class="detail-section-label">Horario</p>
-              <div class="status-badge" :class="getCafeStatus(activeCafe.schedule).isOpen ? 'open' : 'closed'" style="font-size: 0.85rem; padding: 6px 12px; margin-top: 0">
-                <div class="status-dot"></div>
-                {{ getCafeStatus(activeCafe.schedule).text }}
-              </div>
-              <div class="schedule-grid">
-                <div 
-                  v-for="day in activeCafe.schedule" 
-                  :key="day.dayId"
-                  class="schedule-row"
-                  :class="[
-                    day.dayId === new Date().getDay() ? 'is-today' : '',
-                    day.closed ? 'is-closed-day' : 'is-open-day'
-                  ]"
-                >
-                  <div class="schedule-day">
-                    <div class="schedule-day-dot"></div>
-                    {{ day.name }}
-                  </div>
-                  <div class="schedule-hours" v-if="!day.closed">
-                    {{ formatTime(day.open) }} - {{ formatTime(day.close) }}
-                  </div>
-                  <div class="schedule-closed-text" v-else>Cerrado</div>
-                </div>
-              </div>
-            </section>
-            
-            <section class="detail-section">
-              <p class="detail-section-label">Ubicación</p>
-              <div class="detail-info-row">
-                <span class="detail-info-icon">📍</span>
-                <address style="font-style:normal;">{{ activeCafe.address }}</address>
-              </div>
-            </section>
-
-            <section class="detail-section">
-              <p class="detail-section-label">Menú destacado</p>
-              <div class="detail-menu-grid">
-                <div v-for="item in cafeMenu" :key="item.name" class="menu-item">
-                  <span class="menu-item-name">{{ item.name }}</span>
-                  <span class="menu-item-price">{{ item.price }}</span>
-                  <span class="menu-item-desc">{{ item.desc }}</span>
-                </div>
-              </div>
-            </section>
-
-            <section class="detail-section">
-              <p class="detail-section-label">Métodos de Filtrado (Haz clic para aprender)</p>
-              <div class="detail-tags">
-                <span 
-                  v-for="m in activeCafe.coffeeMethods" 
-                  :key="m" 
-                  class="detail-tag detail-tag-method clickable-tag" 
-                  @click="openWikiMethod(m)"
-                  title="Leer más sobre este método"
-                >☕ {{ m }}</span>
-              </div>
-            </section>
-
-            <section class="detail-section">
-              <p class="detail-section-label">Comida</p>
-              <div class="detail-tags">
-                <span v-for="f in activeCafe.food" :key="f" class="detail-tag detail-tag-food">🍽️ {{ f }}</span>
-              </div>
-            </section>
-          </div>
-        </aside>
-      </Transition>
     </div>
 
-    <!-- ── VISTA EXTRA: ENCICLOPEDIA (WIKI) ──────────────── -->
-    <div v-show="currentView === 'wiki'" class="wiki-page">
+    <!-- ═════════ APRENDE ═════════ -->
+    <div v-show="view === 'wiki'" class="wiki-page">
       <div class="wiki-container">
-        
-        <!-- Sidebar de la Wiki -->
-        <aside class="wiki-sidebar">
-          <h2 class="wiki-sidebar-title">📚 Índice</h2>
-          <nav class="wiki-nav">
-            <button 
-              class="wiki-nav-item" 
-              :class="{ active: activeWikiTab === 'historia' }" 
-              @click="activeWikiTab = 'historia'"
-            >📖 Historia del Café</button>
-            <button 
-              class="wiki-nav-item" 
-              :class="{ active: activeWikiTab === 'especialidad' }" 
-              @click="activeWikiTab = 'especialidad'"
-            >🌱 Café de Especialidad</button>
-            <button 
-              class="wiki-nav-item" 
-              :class="{ active: activeWikiTab === 'metodos' }" 
-              @click="activeWikiTab = 'metodos'"
-            >☕ Métodos de Filtrado</button>
-          </nav>
-        </aside>
+        <nav class="wiki-nav" aria-label="Índice">
+          <button v-for="t in wikiTabs" :key="t.id" class="wiki-nav-item" :class="{ active: wikiTab === t.id }" @click="wikiTab = t.id" type="button">
+            <span aria-hidden="true">{{ t.icon }}</span> {{ t.title }}
+          </button>
+        </nav>
 
-        <!-- Contenido de la Wiki -->
         <main class="wiki-content">
-          
-          <!-- Secciones Generales (Historia / Especialidad) -->
-          <div v-if="activeWikiTab !== 'metodos'" class="wiki-article">
-            <h1 class="wiki-h1">{{ activeWikiGeneralData.title }}</h1>
-            <section v-for="(sec, idx) in activeWikiGeneralData.sections" :key="idx" class="wiki-section">
+          <article v-if="wikiArticle" class="wiki-article">
+            <h1 class="wiki-h1">{{ wikiArticle.icon }} {{ wikiArticle.title }}</h1>
+            <p class="wiki-lead">{{ wikiArticle.lead }}</p>
+            <section v-for="sec in wikiArticle.sections" :key="sec.subtitle" class="wiki-section">
               <h3 class="wiki-h3">{{ sec.subtitle }}</h3>
               <p class="wiki-p">{{ sec.text }}</p>
             </section>
-          </div>
+          </article>
 
-          <!-- Sección de Métodos -->
-          <div v-if="activeWikiTab === 'metodos'" class="wiki-article">
-            <h1 class="wiki-h1">☕ Guía de Métodos de Extracción</h1>
-            <p class="wiki-p">Explora los diferentes métodos manuales y máquinas que las cafeterías utilizan para resaltar lo mejor del grano de café.</p>
-            
-            <div class="wiki-methods-grid">
-              <article v-for="(method, name) in WIKI_DATA.methods" :key="name" class="wiki-method-card" :id="'method-' + name">
-                <h3 class="wiki-method-title">{{ method.title }}</h3>
-                <p class="wiki-method-desc"><strong>{{ method.description }}</strong></p>
-                <p class="wiki-method-details">{{ method.details }}</p>
-                <div class="wiki-method-meta">
-                  <span><strong>⚙️ Molienda:</strong> {{ method.grind }}</span>
-                  <span><strong>⏱️ Tiempo:</strong> {{ method.time }}</span>
-                </div>
-              </article>
+          <article v-else-if="wikiTab === 'metodos'" class="wiki-article">
+            <h1 class="wiki-h1">☕ Métodos de preparación</h1>
+            <p class="wiki-lead">Las formas más comunes de preparar café en una cafetería o en casa.</p>
+            <div class="wiki-grid">
+              <section v-for="(m, name) in WIKI_DATA.methods" :key="name" class="wiki-card" :id="'method-' + name">
+                <h3 class="wiki-card-title">{{ m.icon }} {{ m.title }}</h3>
+                <p class="wiki-card-desc">{{ m.description }}</p>
+                <p class="wiki-p">{{ m.details }}</p>
+                <dl class="wiki-meta">
+                  <div><dt>Molienda</dt><dd>{{ m.grind }}</dd></div>
+                  <div><dt>Tiempo</dt><dd>{{ m.time }}</dd></div>
+                  <div><dt>Ratio</dt><dd>{{ m.ratio }}</dd></div>
+                </dl>
+              </section>
             </div>
-          </div>
+          </article>
 
+          <article v-else-if="wikiTab === 'bebidas'" class="wiki-article">
+            <h1 class="wiki-h1">🥛 Bebidas</h1>
+            <p class="wiki-lead">Del guayoyo de casa al flat white de especialidad.</p>
+            <div class="wiki-grid">
+              <section v-for="d in WIKI_DATA.drinks" :key="d.name" class="wiki-card">
+                <h3 class="wiki-card-title">{{ d.name }}</h3>
+                <p class="wiki-p">{{ d.text }}</p>
+              </section>
+            </div>
+          </article>
+
+          <article v-else-if="wikiTab === 'glosario'" class="wiki-article">
+            <h1 class="wiki-h1">🔤 Glosario</h1>
+            <p class="wiki-lead">Palabras que verás en las cartas y en las bolsas de café.</p>
+            <dl class="wiki-glossary">
+              <div v-for="g in WIKI_DATA.glossary" :key="g.term"><dt>{{ g.term }}</dt><dd>{{ g.text }}</dd></div>
+            </dl>
+          </article>
         </main>
       </div>
     </div>
+
+    <footer class="app-footer">
+      Datos de cafeterías © colaboradores de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL) ·
+      <a :href="repoUrl" target="_blank" rel="noopener">Contribuir en GitHub</a>
+    </footer>
   `,
 
   setup() {
-    // Layout State
-    const currentView = ref('home'); // 'home' | 'wiki'
-    const activeWikiTab = ref('historia'); // 'historia' | 'especialidad' | 'metodos'
+    const view = ref('map');          // 'map' | 'wiki'
+    const mobileView = ref('list');   // 'list' | 'map' (solo móvil)
+    const wikiTab = ref('historia');
 
-    // Directory State
-    const searchQuery = ref('');
-    const minRating = ref(0);
-    const selectedPrices = ref([]);
-    const selectedMethods = ref([]);
+    const query = ref('');
+    const selTypes = ref([]);
+    const selMethods = ref([]);
+    const selSnacks = ref([]);
+    const selHood = ref('');
+    const filtersOpen = ref(false);
 
-    const activeCafe = shallowRef(null);
-    const activeCafeId = ref(null);
-    const highlightedCafeId = ref(null);
-    
-    const closeButtonRef = ref(null);
-    const cardRefs = {};
+    const activeId = ref(null);
+    const hoverId = ref(null);
+    const listEl = ref(null);
 
-    const leafletMap = shallowRef(null);
-    const leafletMarkers = {};
+    const map = shallowRef(null);
+    let cluster = null;
+    const markers = {};
     const totalCount = CAFES_DATA.length;
 
-    const filteredCafes = computed(() => {
-      const q = searchQuery.value.toLowerCase().trim();
-      return CAFES_DATA.filter(cafe => {
-        if (q && !`${cafe.name} ${cafe.neighborhood} ${cafe.slogan} ${cafe.description}`.toLowerCase().includes(q)) return false;
-        if (cafe.rating < minRating.value) return false;
-        if (selectedPrices.value.length > 0 && !selectedPrices.value.includes(cafe.price)) return false;
-        if (selectedMethods.value.length > 0 && !selectedMethods.value.every(m => cafe.coffeeMethods.includes(m))) return false;
-        return true;
-      });
-    });
+    const activeCafe = computed(() => CAFES_DATA.find(c => c.id === activeId.value) || null);
+    const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
+    const todayId = computed(() => caracasNow().day);
 
-    const hasActiveFilters = computed(() => searchQuery.value || minRating.value > 0 || selectedPrices.value.length > 0 || selectedMethods.value.length > 0);
-    const cafeMenu = computed(() => activeCafe.value ? CAFE_MENUS[activeCafe.value.id] : []);
+    const wikiTabs = [
+      ...WIKI_DATA.articles.map(a => ({ id: a.id, icon: a.icon, title: a.title })),
+      { id: 'metodos', icon: '☕', title: 'Métodos' },
+      { id: 'bebidas', icon: '🥛', title: 'Bebidas' },
+      { id: 'glosario', icon: '🔤', title: 'Glosario' },
+    ];
+    const wikiArticle = computed(() => WIKI_DATA.articles.find(a => a.id === wikiTab.value) || null);
 
-    const activeWikiGeneralData = computed(() => {
-      if (activeWikiTab.value === 'historia') return WIKI_DATA.general.find(i => i.id === 'historia');
-      if (activeWikiTab.value === 'especialidad') return WIKI_DATA.general.find(i => i.id === 'especialidad');
-      return {};
-    });
-
-    function togglePrice(p) { selectedPrices.value = selectedPrices.value.includes(p) ? selectedPrices.value.filter(x => x !== p) : [...selectedPrices.value, p]; }
-    function toggleMethod(m) { selectedMethods.value = selectedMethods.value.includes(m) ? selectedMethods.value.filter(x => x !== m) : [...selectedMethods.value, m]; }
-    function clearFilters() { searchQuery.value = ''; minRating.value = 0; selectedPrices.value = []; selectedMethods.value = []; }
-    function registerCardRef(cafeId, el) { if (el) cardRefs[cafeId] = el; else delete cardRefs[cafeId]; }
-    function scrollToCard(cafeId) { nextTick(() => { const el = cardRefs[cafeId]; if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); }
-
-    function openDetail(cafe) {
-      activeCafe.value = cafe;
-      activeCafeId.value = cafe.id;
-      document.title = `${cafe.name} · Quiero un Café Caracas`;
-      
-      const map = leafletMap.value;
-      if (map) {
-        // Center slightly to the left so the marker isn't hidden by the right panel
-        const offsetLng = cafe.lng - 0.012; 
-        map.flyTo([cafe.lat, offsetLng], 15, { duration: 0.9 });
-        
-        const marker = leafletMarkers[cafe.id];
-        if (marker) setTimeout(() => marker.openPopup(), 600);
+    // ── Filtrado ───────────────────────────────────────────
+    function matches(cafe, skip) {
+      const q = norm(query.value).trim();
+      if (q) {
+        const hay = norm([cafe.name, cafe.neighborhood, cafe.address, cafe.description, ...cafe.snacks, ...cafe.methods, ...cafe.drinks].join(' '));
+        if (!hay.includes(q)) return false;
       }
-      nextTick(() => { if (closeButtonRef.value) closeButtonRef.value.focus(); });
+      if (skip !== 'type' && selTypes.value.length && !selTypes.value.includes(cafe.type)) return false;
+      if (skip !== 'method' && selMethods.value.length && !selMethods.value.every(m => cafe.methods.includes(m))) return false;
+      if (skip !== 'snack' && selSnacks.value.length && !selSnacks.value.every(s => cafe.snacks.includes(s))) return false;
+      if (selHood.value && cafe.neighborhood !== selHood.value) return false;
+      return true;
     }
 
-    function closeDetail() {
-      activeCafeId.value = null;
-      document.title = 'Quiero un Café · Caracas';
-      setTimeout(() => { activeCafe.value = null; }, 300);
-      
-      // Re-center map to general view
-      const map = leafletMap.value;
-      if (map) map.flyTo([10.4900, -66.8600], 13, { duration: 0.9 });
+    const filteredCafes = computed(() =>
+      CAFES_DATA.filter(c => matches(c)).sort((a, b) => a.name.localeCompare(b.name, 'es')));
+
+    // Cuántos resultados daría cada opción de filtro con el resto de filtros aplicados
+    const facet = computed(() => {
+      const count = (skip, pick) => {
+        const out = {};
+        CAFES_DATA.filter(c => matches(c, skip)).forEach(c => pick(c).forEach(v => { out[v] = (out[v] || 0) + 1; }));
+        return out;
+      };
+      return {
+        type: count('type', c => [c.type]),
+        method: count('method', c => c.methods),
+        snack: count('snack', c => c.snacks),
+      };
+    });
+
+    const activeFilterCount = computed(() =>
+      selTypes.value.length + selMethods.value.length + selSnacks.value.length + (selHood.value ? 1 : 0));
+
+    // La plantilla desenvuelve los refs, así que el filtro se indica por nombre
+    const filterRefs = { types: selTypes, methods: selMethods, snacks: selSnacks };
+    function toggle(name, value) {
+      const r = filterRefs[name];
+      r.value = r.value.includes(value) ? r.value.filter(v => v !== value) : [...r.value, value];
     }
-    
-    // Jump to Wiki Method from Map Detail
-    function openWikiMethod(methodName) {
-      currentView.value = 'wiki';
-      activeWikiTab.value = 'metodos';
+    function clearFilters() {
+      query.value = ''; selTypes.value = []; selMethods.value = []; selSnacks.value = []; selHood.value = '';
+    }
+
+    const statusOf = (cafe) => getStatus(cafe.schedule);
+    const directionsUrl = (c) => `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`;
+
+    // ── Selección ──────────────────────────────────────────
+    function select(cafe, { fly = true } = {}) {
+      activeId.value = cafe.id;
+      document.title = `${cafe.name} · Cafecito Caracas`;
+      if (window.matchMedia('(max-width: 860px)').matches) mobileView.value = 'list';
+      if (map.value && fly) {
+        map.value.flyTo([cafe.lat, cafe.lng], Math.max(map.value.getZoom(), 16), { duration: 0.7 });
+      }
+      refreshIcons();
+    }
+    function closeDetail() {
+      activeId.value = null;
+      document.title = 'Cafecito Caracas · Mapa de cafeterías';
+      refreshIcons();
+      nextTick(() => fitToResults());
+    }
+    function setMobileView(v) {
+      mobileView.value = v;
+      if (v === 'map') nextTick(() => map.value && map.value.invalidateSize());
+    }
+    function openWikiMethod(name) {
+      view.value = 'wiki';
+      wikiTab.value = 'metodos';
       nextTick(() => {
-        const el = document.getElementById('method-' + methodName);
+        const el = document.getElementById('method-' + name);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     }
 
-    function refreshMarkerIcons() {
-      const hid = highlightedCafeId.value;
-      Object.entries(leafletMarkers).forEach(([id, marker]) => {
+    // ── Mapa ───────────────────────────────────────────────
+    function refreshIcons() {
+      Object.entries(markers).forEach(([id, marker]) => {
         const cafe = CAFES_DATA.find(c => c.id === Number(id));
-        if (cafe) marker.setIcon(createMarkerIcon(cafe, Number(id) === hid));
+        marker.setIcon(createMarkerIcon(cafe, Number(id) === activeId.value));
       });
     }
 
-    watch(filteredCafes, (newList) => {
-      const map = leafletMap.value;
-      if (!map) return;
-      const visibleIds = new Set(newList.map(c => c.id));
-      CAFES_DATA.forEach(cafe => {
-        const marker = leafletMarkers[cafe.id];
-        if (!marker) return;
-        const isVisible = visibleIds.has(cafe.id);
-        const isOnMap = map.hasLayer(marker);
-        if (isVisible && !isOnMap) map.addLayer(marker);
-        if (!isVisible && isOnMap) map.removeLayer(marker);
-      });
+    function syncMarkers() {
+      if (!cluster) return;
+      cluster.clearLayers();
+      cluster.addLayers(filteredCafes.value.map(c => markers[c.id]));
+    }
+
+    function fitToResults() {
+      if (!map.value) return;
+      const list = filteredCafes.value;
+      if (!list.length) return;
+      const bounds = (activeFilterCount.value || query.value.trim())
+        ? L.latLngBounds(list.map(c => [c.lat, c.lng])).pad(0.2)
+        : ZONE_BOUNDS;
+      map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6 });
+    }
+
+    watch(filteredCafes, () => {
+      syncMarkers();
+      if (!activeId.value) fitToResults();
     }, { flush: 'post' });
-    
-    // When returning to home view, make sure map resizes properly
-    watch(currentView, (newVal) => {
-      if (newVal === 'home') {
-        nextTick(() => {
-          const map = leafletMap.value;
-          if (map) map.invalidateSize();
-        });
-      }
-    });
+
+    watch(view, (v) => { if (v === 'map') nextTick(() => map.value && map.value.invalidateSize()); });
 
     onMounted(() => {
       nextTick(() => {
-        const mapEl = document.getElementById('map');
-        if (!mapEl) return;
-        
-        const map = L.map('map', { center: [10.4900, -66.8600], zoom: 13, zoomControl: true });
-        leafletMap.value = map;
+        const m = L.map('map', { zoomControl: false, attributionControl: true, minZoom: 10, maxZoom: 19 });
+        L.control.zoom({ position: 'bottomright' }).addTo(m);
+        m.fitBounds(ZONE_BOUNDS);
+        map.value = m;
 
-        // ── Tile Layer: Google Maps Normal (Con Calles) ──
-        // El usuario necesita calles completas. Eliminamos el parámetro experimental apistyle.
-        L.tileLayer(
-          'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-          { attribution: '&copy; Google Maps', maxZoom: 20 }
-        ).addTo(map);
+        L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19, className: 'base-tiles' }).addTo(m);
 
-        CAFES_DATA.forEach(cafe => {
-          const marker = L.marker([cafe.lat, cafe.lng], {
-            icon: createMarkerIcon(cafe, false),
-            title: cafe.name,
-            riseOnHover: true,
-          });
-
-          const popupDOM = buildPopupDOM(cafe, () => {
-            marker.closePopup();
-            openDetail(cafe);
-          });
-
-          const popup = L.popup({ closeButton: false, className: 'custom-popup', autoPan: true }).setContent(popupDOM);
-          marker.bindPopup(popup);
-          
-          marker.on('popupopen', () => { highlightedCafeId.value = cafe.id; refreshMarkerIcons(); scrollToCard(cafe.id); });
-          marker.on('popupclose', () => { if (highlightedCafeId.value === cafe.id) { highlightedCafeId.value = null; refreshMarkerIcons(); } });
-
-          marker.addTo(map);
-          leafletMarkers[cafe.id] = marker;
+        cluster = L.markerClusterGroup({
+          showCoverageOnHover: false,
+          maxClusterRadius: 42,
+          disableClusteringAtZoom: 16,
+          iconCreateFunction: clusterIcon,
         });
-
-        map.invalidateSize({ pan: false });
-        setTimeout(() => map.invalidateSize({ pan: false }), 200);
+        CAFES_DATA.forEach((cafe) => {
+          const marker = L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, false), title: cafe.name, keyboard: true });
+          marker.bindTooltip(cafe.name, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
+          marker.on('click', () => select(cafe));
+          marker.on('mouseover', () => { hoverId.value = cafe.id; });
+          marker.on('mouseout', () => { hoverId.value = null; });
+          markers[cafe.id] = marker;
+        });
+        m.addLayer(cluster);
+        syncMarkers();
+        setTimeout(() => m.invalidateSize(), 250);
       });
     });
 
-    onUnmounted(() => {
-      if (leafletMap.value) { leafletMap.value.remove(); leafletMap.value = null; }
-    });
+    onUnmounted(() => { if (map.value) { map.value.remove(); map.value = null; } });
 
     return {
-      WIKI_DATA,
-      RATING_OPTIONS, PRICE_OPTIONS, METHOD_OPTIONS, FOOD_OPTIONS, totalCount,
-      searchQuery, minRating, selectedPrices, selectedMethods,
-      activeCafe, activeCafeId, highlightedCafeId,
-      currentView, activeWikiTab, activeWikiGeneralData,
-      closeButtonRef,
-      filteredCafes, hasActiveFilters, cafeMenu,
-      togglePrice, toggleMethod, clearFilters, openDetail, closeDetail, registerCardRef,
-      openWikiMethod,
-      starsFromRating, getCafeStatus, formatTime
+      WIKI_DATA, TYPE_INFO, TYPE_OPTIONS, METHOD_OPTIONS, SNACK_OPTIONS, HOOD_OPTIONS,
+      repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
+      view, mobileView, wikiTab, wikiTabs, wikiArticle,
+      query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
+      activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
+      filteredCafes, facet, activeFilterCount,
+      toggle, clearFilters, select, closeDetail, setMobileView, openWikiMethod,
+      statusOf, directionsUrl, issueUrl, formatTime,
     };
-  }
+  },
 };
 
-const vueApp = createApp(App);
-vueApp.mount('#app');
+createApp(App).mount('#app');
