@@ -100,7 +100,7 @@ OVERRIDES = {
 HOOD_FIX = {
     'n4075471426': 'La Carlota',
     'nominatim:gran-cafe': 'Sabana Grande',
-    'n13502628501': 'El Hatillo',
+    'n13502628501': 'La Trinidad',
     'n11873114068': 'El Hatillo',
     'n11841838790': 'Av. Teherán (oeste)',
     'w1040968703': 'Av. Baralt (centro)',
