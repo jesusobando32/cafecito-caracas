@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       PRIMARY SEO META TAGS
+       ════════════════════════════════════════════════════ -->
+  <title id="page-title">Quiero un Café · Directorio de Cafeterías en Caracas</title>
+  <meta name="description" content="Descubre las mejores cafeterías de Caracas. Filtra por barrio, métodos de extracción, precios y opciones de comida. Mapa interactivo incluido." />
+  <meta name="keywords" content="café Caracas, cafeterías Venezuela, specialty coffee Caracas, café de especialidad, directorio cafeterías" />
+  <meta name="author" content="Quiero un Café" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://quierouncare.com.ve/" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       OPEN GRAPH — Social Sharing
+       ════════════════════════════════════════════════════ -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://quierouncare.com.ve/" />
+  <meta property="og:title"       content="Quiero un Café · Directorio de Cafeterías en Caracas" />
+  <meta property="og:description" content="Descubre las mejores cafeterías de Caracas. Filtra por barrio, métodos de extracción, precios y opciones de comida." />
+  <meta property="og:image"       content="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&q=80" />
+  <meta property="og:locale"      content="es_VE" />
+  <meta property="og:site_name"   content="Quiero un Café" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       TWITTER CARD
+       ════════════════════════════════════════════════════ -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Quiero un Café · Caracas" />
+  <meta name="twitter:description" content="Directorio interactivo de cafeterías en Caracas, Venezuela." />
+  <meta name="twitter:image"       content="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&q=80" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       STRUCTURED DATA — JSON-LD (Schema.org)
+       ════════════════════════════════════════════════════ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Quiero un Café",
+    "description": "Directorio interactivo de cafeterías en Caracas, Venezuela",
+    "url": "https://quierouncare.com.ve/",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "All",
+    "inLanguage": "es-VE",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PERFORMANCE — Font Preconnect
+       ════════════════════════════════════════════════════ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://images.unsplash.com" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       EXTERNAL CSS DEPENDENCIES
+       ════════════════════════════════════════════════════ -->
+
+  <!-- Leaflet CSS — MUST be before any Leaflet JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- App Custom CSS -->
+  <link rel="stylesheet" href="styles/main.css" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       TAILWIND CONFIGURATION
+       ════════════════════════════════════════════════════ -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coffee: {
+              darkest: '#1a0f0a',
+              dark:    '#2c1a0e',
+              rich:    '#4a2c17',
+              medium:  '#7b4f2e',
+              light:   '#c9956c',
+              cream:   '#f5e6d3',
+              latte:   '#e8d5bb',
+            },
+            gold: '#d4a853',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Favicon emoji (browser support varies) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+</head>
+
+<body>
+  <!--
+    ╔══════════════════════════════════════════════════════╗
+    ║  VUE 3 APP ROOT — All content is rendered by Vue     ║
+    ╚══════════════════════════════════════════════════════╝
+  -->
+  <div id="app" role="application" aria-label="Quiero un Café — Directorio de Caracas">
+    <!-- Accessible no-JS fallback -->
+    <noscript>
+      <div style="padding:3rem;text-align:center;font-family:Georgia,serif;background:#fdf8f3;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;">
+        <span style="font-size:4rem;">☕</span>
+        <h1 style="font-size:2rem;color:#1a0f0a;">Quiero un Café</h1>
+        <p style="color:#7b4f2e;max-width:400px;">
+          Esta aplicación requiere JavaScript para mostrar el mapa interactivo
+          y el directorio de cafeterías. Por favor actívalo en tu navegador.
+        </p>
+      </div>
+    </noscript>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCRIPTS — Load order is critical:
+       1. Leaflet (needs DOM, no deps)
+       2. Vue 3  (no deps)
+       3. Mock Data (global constant)
+       4. App logic (uses Vue + Leaflet + CAFES_DATA)
+       ════════════════════════════════════════════════════ -->
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+
+  <script src="data/cafes.js"></script>
+  <script src="data/wiki.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
