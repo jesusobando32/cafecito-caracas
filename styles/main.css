@@ -293,3 +293,15 @@ a { color: var(--caramel-dark); }
 }
 
 .small { font-size: .8rem; margin: 6px 0 0; }
+
+/* Favoritos */
+.cafe-item { position: relative; }
+.cafe-item .cafe-card { padding-right: 44px; }
+.fav-btn {
+  position: absolute; top: 8px; right: 8px; z-index: 1; width: 30px; height: 30px; border-radius: 50%;
+  border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1;
+}
+.fav-btn:hover { background: #f1e4d3; color: var(--red); }
+.fav-btn.on { color: var(--red); }
+.card-status { position: absolute; right: 18px; bottom: 14px; }
+.btn-on { background: #fbe9e5; border-color: #e8b9ad; color: var(--red); }

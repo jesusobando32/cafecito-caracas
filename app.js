@@ -34,6 +34,14 @@ const HOOD_OPTIONS = uniqSorted(CAFES_DATA.map(c => c.neighborhood));
 // Encuadre inicial: se ajusta a todas las cafeterías (Caricuao → Petare, La Trinidad, El Hatillo)
 const ZONE_BOUNDS = L.latLngBounds(CAFES_DATA.map(c => [c.lat, c.lng])).pad(0.06);
 
+const FAV_KEY = 'cafecito:favs';
+function loadFavs() {
+  try { const v = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+}
+function saveFavs(list) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch (e) { /* modo privado: se ignora */ }
+}
+
 function distanceKm(a, b) {
   const R = 6371, rad = (d) => d * Math.PI / 180;
   const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
@@ -165,6 +173,7 @@ const App = {
 
           <div class="detail-actions">
             <a class="btn btn-primary" :href="directionsUrl(activeCafe)" target="_blank" rel="noopener">Cómo llegar</a>
+            <button class="btn" :class="{ 'btn-on': isFav(activeCafe.id) }" @click="toggleFav(activeCafe.id)" type="button">{{ isFav(activeCafe.id) ? '♥ Guardado' : '♡ Guardar' }}</button>
             <a class="btn" :href="issueUrl(activeCafe)" target="_blank" rel="noopener">¿Falta algo? Aporta datos</a>
           </div>
           <p v-if="activeCafe.sources.length" class="detail-sources">
@@ -219,6 +228,7 @@ const App = {
                 <div class="chip-group">
                   <button class="chip" :class="{ active: openNow }" @click="openNow = !openNow" type="button" title="Solo locales con horario confirmado">Abierto ahora</button>
                   <button class="chip" :class="{ active: userPos }" @click="locate" type="button" title="Ordena por distancia">Cerca de mí</button>
+                  <button class="chip" :class="{ active: onlyFavs }" @click="onlyFavs = !onlyFavs" type="button">♥ Favoritos <small>{{ favs.length }}</small></button>
                 </div>
                 <p v-if="geoMsg" class="muted small">{{ geoMsg }}</p>
               </div>
@@ -243,7 +253,8 @@ const App = {
               <p class="muted">Prueba con menos filtros. Si un dato falta en el mapa, puedes aportarlo desde la ficha de cada local.</p>
               <button class="btn" @click="clearFilters" type="button">Limpiar filtros</button>
             </li>
-            <li v-for="cafe in filteredCafes" :key="cafe.id">
+            <li v-for="cafe in filteredCafes" :key="cafe.id" class="cafe-item">
+              <button class="fav-btn" :class="{ on: isFav(cafe.id) }" @click="toggleFav(cafe.id)" :aria-pressed="isFav(cafe.id)" :aria-label="(isFav(cafe.id) ? 'Quitar de favoritos: ' : 'Guardar en favoritos: ') + cafe.name" type="button">{{ isFav(cafe.id) ? '♥' : '♡' }}</button>
               <button class="cafe-card" :class="{ 'is-hover': hoverId === cafe.id }" type="button"
                       @click="select(cafe)" @mouseenter="hoverId = cafe.id" @mouseleave="hoverId = null">
                 <span class="card-avatar" :class="'type-' + cafe.type" aria-hidden="true" v-html="cupIcon"></span>
@@ -352,6 +363,8 @@ const App = {
     const selHood = ref('');
     const openNow = ref(false);
     const filtersOpen = ref(false);
+    const favs = ref(loadFavs().filter(id => CAFES_DATA.some(c => c.id === id)));
+    const onlyFavs = ref(false);
     const userPos = ref(null);
     const geoMsg = ref('');
     let userMarker = null;
@@ -389,6 +402,7 @@ const App = {
       if (skip !== 'snack' && selSnacks.value.length && !selSnacks.value.every(s => cafe.snacks.includes(s))) return false;
       if (selHood.value && cafe.neighborhood !== selHood.value) return false;
       if (openNow.value && getStatus(cafe.schedule).state !== 'open') return false;
+      if (onlyFavs.value && !favs.value.includes(cafe.id)) return false;
       return true;
     }
 
@@ -399,6 +413,12 @@ const App = {
         ? list.sort((a, b) => distanceKm(me, a) - distanceKm(me, b))
         : list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
     });
+
+    const isFav = (id) => favs.value.includes(id);
+    function toggleFav(id) {
+      favs.value = isFav(id) ? favs.value.filter(x => x !== id) : [...favs.value, id];
+      saveFavs(favs.value);
+    }
 
     const distanceText = (cafe) => {
       if (!userPos.value) return '';
@@ -441,7 +461,7 @@ const App = {
     });
 
     const activeFilterCount = computed(() =>
-      selTypes.value.length + selMethods.value.length + selSnacks.value.length + (selHood.value ? 1 : 0) + (openNow.value ? 1 : 0));
+      selTypes.value.length + selMethods.value.length + selSnacks.value.length + (selHood.value ? 1 : 0) + (openNow.value ? 1 : 0) + (onlyFavs.value ? 1 : 0));
 
     // La plantilla desenvuelve los refs, así que el filtro se indica por nombre
     const filterRefs = { types: selTypes, methods: selMethods, snacks: selSnacks };
@@ -450,7 +470,7 @@ const App = {
       r.value = r.value.includes(value) ? r.value.filter(v => v !== value) : [...r.value, value];
     }
     function clearFilters() {
-      query.value = ''; selTypes.value = []; selMethods.value = []; selSnacks.value = []; selHood.value = ''; openNow.value = false;
+      query.value = ''; selTypes.value = []; selMethods.value = []; selSnacks.value = []; selHood.value = ''; openNow.value = false; onlyFavs.value = false;
     }
 
     const statusOf = (cafe) => getStatus(cafe.schedule);
@@ -553,7 +573,7 @@ const App = {
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
       query, selTypes, selMethods, selSnacks, selHood, openNow, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
-      filteredCafes, facet, activeFilterCount, userPos, geoMsg, locate, distanceText,
+      filteredCafes, facet, activeFilterCount, favs, onlyFavs, isFav, toggleFav, userPos, geoMsg, locate, distanceText,
       toggle, clearFilters, select, closeDetail, setMobileView, openWikiMethod,
       statusOf, directionsUrl, issueUrl, formatTime,
     };
