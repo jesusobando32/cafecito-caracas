@@ -34,6 +34,12 @@ const HOOD_OPTIONS = uniqSorted(CAFES_DATA.map(c => c.neighborhood));
 // Encuadre inicial: se ajusta a todas las cafeterías (Caricuao → Petare, La Trinidad, El Hatillo)
 const ZONE_BOUNDS = L.latLngBounds(CAFES_DATA.map(c => [c.lat, c.lng])).pad(0.06);
 
+const THEME_KEY = 'cafecito:theme';
+function initialTheme() {
+  try { const t = localStorage.getItem(THEME_KEY); if (t === 'dark' || t === 'light') return t; } catch (e) { /* sin storage */ }
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 const FAV_KEY = 'cafecito:favs';
 function loadFavs() {
   try { const v = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; }
@@ -120,6 +126,7 @@ const App = {
         <button class="nav-btn" :class="{ active: view === 'wiki' }" @click="view = 'wiki'" type="button">Aprende</button>
       </nav>
       <span class="header-badge" aria-live="polite">{{ filteredCafes.length }} de {{ totalCount }}</span>
+      <button class="theme-btn" @click="toggleTheme" type="button" :aria-label="theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'" :title="theme === 'dark' ? 'Modo claro' : 'Modo oscuro'">{{ theme === 'dark' ? '☀' : '☾' }}</button>
     </header>
 
     <!-- ═════════ MAPA ═════════ -->
@@ -355,6 +362,13 @@ const App = {
   `,
 
   setup() {
+    const theme = ref(initialTheme());
+    watch(theme, (t) => {
+      document.documentElement.dataset.theme = t;
+      try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* sin storage */ }
+    }, { immediate: true });
+    const toggleTheme = () => { theme.value = theme.value === 'dark' ? 'light' : 'dark'; };
+
     const view = ref('map');          // 'map' | 'wiki'
     const mobileView = ref('list');   // 'list' | 'map' (solo móvil)
     const wikiTab = ref('historia');
@@ -616,6 +630,7 @@ const App = {
     return {
       WIKI_DATA, TYPE_INFO, TYPE_OPTIONS, METHOD_OPTIONS, SNACK_OPTIONS, HOOD_OPTIONS,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
+      theme, toggleTheme,
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
       query, selTypes, selMethods, selSnacks, selHood, openNow, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,

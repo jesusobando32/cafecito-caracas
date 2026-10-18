@@ -9,6 +9,7 @@
   --caramel-dark: #9d5a24;
   --crema: #f7f1e8;
   --paper: #fffdf9;
+  --card: #ffffff;
   --line: #e7ddcf;
   --muted: #7d6d5f;
   --text: #2a2018;
@@ -48,7 +49,7 @@ a { color: var(--caramel-dark); }
   gap: 18px;
   padding: 0 20px;
   background: var(--espresso);
-  color: var(--crema);
+  color: #f7f1e8;
   z-index: 1100;
 }
 .app-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
@@ -94,7 +95,7 @@ a { color: var(--caramel-dark); }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: .9rem; pointer-events: none; }
 .search-input {
   width: 100%; padding: 11px 14px 11px 36px; border-radius: 12px;
-  border: 1.5px solid var(--line); background: #fff;
+  border: 1.5px solid var(--line); background: var(--card);
 }
 .search-input:focus { border-color: var(--caramel); outline: none; box-shadow: 0 0 0 3px rgba(196, 122, 61, .18); }
 
@@ -110,7 +111,7 @@ a { color: var(--caramel-dark); }
 .filter-label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 7px; }
 .chip-group { display: flex; flex-wrap: wrap; gap: 7px; }
 .chip {
-  border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+  border: 1.5px solid var(--line); background: var(--card); border-radius: 999px;
   padding: 6px 12px; font-size: .86rem; display: inline-flex; align-items: center; gap: 6px;
   transition: all .15s;
 }
@@ -119,7 +120,7 @@ a { color: var(--caramel-dark); }
 .chip.empty { opacity: .45; }
 .chip.active { background: var(--espresso); border-color: var(--espresso); color: #fff; }
 .chip.active small { color: #d9c9b6; }
-.select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; }
+.select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--card); }
 .btn-link { background: none; border: 0; color: var(--caramel-dark); font-weight: 600; padding: 4px 0; }
 
 @media (min-width: 861px) {
@@ -134,7 +135,7 @@ a { color: var(--caramel-dark); }
 .cafe-list { list-style: none; margin: 0; padding: 6px 12px 24px; display: flex; flex-direction: column; gap: 8px; }
 .cafe-card {
   width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
-  background: #fff; border: 1.5px solid var(--line); border-radius: var(--radius); padding: 11px 12px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: var(--radius); padding: 11px 12px;
   transition: border-color .15s, box-shadow .15s, transform .15s;
 }
 .cafe-card:hover, .cafe-card.is-hover { border-color: var(--caramel); box-shadow: var(--shadow); transform: translateY(-1px); }
@@ -175,7 +176,7 @@ a { color: var(--caramel-dark); }
 /* ── Botones ────────────────────────────────────────────── */
 .btn {
   display: inline-block; text-decoration: none; text-align: center; padding: 10px 16px; border-radius: 12px;
-  border: 1.5px solid var(--line); background: #fff; font-weight: 600; font-size: .9rem; color: var(--roast);
+  border: 1.5px solid var(--line); background: var(--card); font-weight: 600; font-size: .9rem; color: var(--roast);
   transition: all .15s;
 }
 .btn:hover { border-color: var(--caramel); }
@@ -243,7 +244,7 @@ a { color: var(--caramel-dark); }
 .wiki-h3 { font-family: var(--font-display); font-size: 1.15rem; margin: 22px 0 6px; color: var(--roast); }
 .wiki-p { margin: 0; }
 .wiki-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 8px; }
-.wiki-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: #fff; scroll-margin-top: 80px; }
+.wiki-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: var(--card); scroll-margin-top: 80px; }
 .wiki-card-title { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 4px; }
 .wiki-card-desc { font-weight: 600; color: var(--caramel-dark); margin: 0 0 8px; font-size: .9rem; }
 .wiki-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 0; font-size: .78rem; }
@@ -308,3 +309,39 @@ a { color: var(--caramel-dark); }
 
 .results-row { display: flex; align-items: center; justify-content: space-between; padding-right: 18px; }
 .share { font-size: .82rem; }
+
+/* Modo oscuro */
+:root[data-theme='dark'] {
+  --crema: #17110d;
+  --paper: #1f1712;
+  --card: #2a2019;
+  --line: #3d2f25;
+  --text: #f1e8dc;
+  --muted: #ab9b8b;
+  --roast: #e6d3bd;
+  --caramel-dark: #e09a5f;
+  --shadow: 0 6px 22px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+:root[data-theme='dark'] .base-tiles { filter: invert(1) hue-rotate(180deg) saturate(.5) brightness(.88) contrast(.9); }
+:root[data-theme='dark'] .card-avatar { background: #3a2a1e; }
+:root[data-theme='dark'] .detail-desc,
+:root[data-theme='dark'] .schedule li.is-today { background: #2d2219; }
+:root[data-theme='dark'] .tag { background: #3a2c21; color: #ead9c4; }
+:root[data-theme='dark'] .tag-method { background: var(--caramel-dark); color: #1b120b; }
+:root[data-theme='dark'] .chip.active { background: var(--caramel); border-color: var(--caramel); color: #1b120b; }
+:root[data-theme='dark'] .chip.active small { color: #3b2412; }
+:root[data-theme='dark'] .wiki-nav-item:hover { background: #2a2019; }
+:root[data-theme='dark'] .wiki-nav-item.active { background: var(--caramel); color: #1b120b; }
+:root[data-theme='dark'] .btn-primary, :root[data-theme='dark'] .nav-btn.active { color: #1b120b; }
+:root[data-theme='dark'] #map { background: #1b1612; }
+:root[data-theme='dark'] .map-legend { background: rgba(31, 23, 18, .94); }
+
+.theme-btn {
+  background: transparent; border: 1px solid rgba(255, 255, 255, .22); color: #d9c9b6;
+  width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; line-height: 1;
+}
+.theme-btn:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+.header-badge { margin-left: auto; }
+.theme-btn { margin-left: 4px; }
+@media (max-width: 860px) { .theme-btn { margin-left: auto; } }
