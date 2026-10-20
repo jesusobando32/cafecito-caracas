@@ -67,7 +67,17 @@ const TYPE_INFO = {
 };
 const TYPE_OPTIONS = ['cafeteria', 'especialidad'];
 
-// Lecturas de Aprende, en orden. Los artículos salen de WIKI_DATA.articles; el resto se renderiza a medida.
+// Lecturas de la guía, en orden. Los artículos salen de WIKI_DATA.articles; el resto se renderiza a medida.
+// Menú superior: las secciones más usadas de la guía van directas; «Guía» abre la portada con todas las lecturas.
+const NAV = [
+  { id: 'mapa', label: 'Mapa', href: './' },
+  { id: 'historia', label: 'Historia', topic: 'historia', href: '#guia/historia' },
+  { id: 'metodos', label: 'Métodos', topic: 'metodos', href: '#guia/metodos' },
+  { id: 'bebidas', label: 'Bebidas', topic: 'bebidas', href: '#guia/bebidas' },
+  { id: 'guia', label: 'Guía', topic: null, href: '#guia' },
+];
+const NAV_DIRECT_TOPICS = ['historia', 'metodos', 'bebidas'];
+
 const LEARN_EXTRA = {
   metodos:  { title: 'Métodos de preparación', lead: 'Las formas más comunes de preparar café en una cafetería o en casa.' },
   bebidas:  { title: 'Bebidas', lead: 'Del guayoyo de casa al flat white de especialidad.' },
@@ -256,10 +266,13 @@ const App = {
         <span class="app-logo-icon" aria-hidden="true" v-html="cupIcon"></span>
         <span class="app-logo-text">Cafecito <em>Caracas</em></span>
       </a>
-      <nav class="main-nav" aria-label="Secciones">
-        <a class="nav-btn" :class="{ active: view === 'map' }" :aria-current="view === 'map' ? 'page' : null" href="./" @click.prevent="view = 'map'">Mapa</a>
-        <a class="nav-btn" :class="{ active: view === 'wiki' }" :aria-current="view === 'wiki' ? 'page' : null" href="#aprende" @click.prevent="openTopic(null)">Aprende</a>
+      <nav id="main-nav" class="main-nav" :class="{ open: menuOpen }" aria-label="Secciones">
+        <a v-for="item in NAV" :key="item.id" class="nav-btn" :class="{ active: navActive(item) }" :aria-current="navActive(item) ? 'page' : null"
+           :href="item.href" @click.prevent="goNav(item)">{{ item.label }}</a>
       </nav>
+      <button class="nav-toggle" type="button" :aria-expanded="menuOpen" aria-controls="main-nav" @click="menuOpen = !menuOpen">
+        <span class="sr-only">Menú</span><span class="nav-toggle-bars" aria-hidden="true"></span>
+      </button>
       <span class="header-badge" aria-live="polite">{{ filteredCafes.length }} de {{ totalCount }}</span>
     </header>
 
@@ -437,15 +450,15 @@ const App = {
       </section>
     </div>
 
-    <!-- ═════════ APRENDE ═════════ -->
+    <!-- ═════════ GUÍA ═════════ -->
     <div v-show="view === 'wiki'" class="wiki-page" role="main" ref="wikiEl">
 
-      <!-- Portada: landing de Aprende -->
+      <!-- Portada: landing de la guía -->
       <div v-if="!topic" class="learn">
         <section class="learn-hero">
           <div class="learn-wrap learn-hero-grid">
             <div>
-              <p class="eyebrow">Aprende</p>
+              <p class="eyebrow">Guía del café</p>
               <h1 class="learn-title">Todo lo que hay detrás de tu taza</h1>
               <p class="learn-intro">Siete lecturas cortas para entender de dónde viene el café, qué significa «de especialidad» y qué pedir la próxima vez que estés frente a la barra.</p>
               <div class="learn-actions">
@@ -465,7 +478,7 @@ const App = {
           <h2 id="idx-title" class="eyebrow eyebrow-dark">Índice</h2>
           <ol class="idx-list">
             <li v-for="t in LEARN_TOPICS" :key="t.id">
-              <a class="idx-row" :href="'#aprende/' + t.id" @click.prevent="openTopic(t.id)">
+              <a class="idx-row" :href="'#guia/' + t.id" @click.prevent="openTopic(t.id)">
                 <span class="idx-num">{{ t.num }}</span>
                 <span class="idx-text">
                   <span class="idx-title">{{ t.title }}</span>
@@ -504,7 +517,7 @@ const App = {
         <div class="topic-hero">
           <div class="learn-wrap topic-hero-grid" :class="{ 'has-img': topicHero }">
             <div>
-              <a class="crumb" href="#aprende" @click.prevent="openTopic(null)">← Aprende</a>
+              <a class="crumb" href="#guia" @click.prevent="openTopic(null)">← Guía</a>
               <p class="eyebrow">Lectura {{ topic.num }} de {{ LEARN_TOPICS.length }}</p>
               <h1 class="learn-title topic-title">{{ topic.title }}</h1>
               <p class="learn-intro">{{ topic.lead }}</p>
@@ -591,10 +604,10 @@ const App = {
         </div>
 
         <nav class="learn-wrap pager" aria-label="Otras lecturas">
-          <a v-if="prevTopic" class="pager-link pager-prev" :href="'#aprende/' + prevTopic.id" @click.prevent="openTopic(prevTopic.id)">
+          <a v-if="prevTopic" class="pager-link pager-prev" :href="'#guia/' + prevTopic.id" @click.prevent="openTopic(prevTopic.id)">
             <span class="pager-dir">← Anterior</span><span class="pager-name">{{ prevTopic.title }}</span>
           </a>
-          <a v-if="nextTopic" class="pager-link pager-next" :href="'#aprende/' + nextTopic.id" @click.prevent="openTopic(nextTopic.id)">
+          <a v-if="nextTopic" class="pager-link pager-next" :href="'#guia/' + nextTopic.id" @click.prevent="openTopic(nextTopic.id)">
             <span class="pager-dir">Siguiente →</span><span class="pager-name">{{ nextTopic.title }}</span>
           </a>
           <a v-else class="pager-link pager-next" href="./" @click.prevent="view = 'map'">
@@ -613,7 +626,21 @@ const App = {
   setup() {
     const view = ref('map');          // 'map' | 'wiki'
     const sheet = ref('peek');        // panel móvil: 'peek' | 'half' | 'full'
-    const wikiTab = ref(null);        // null = portada de Aprende; si no, id del tema
+    const wikiTab = ref(null);        // null = portada de la guía; si no, id del tema
+    const menuOpen = ref(false);
+    const navActive = (item) => {
+      if (item.id === 'mapa') return view.value === 'map';
+      if (view.value !== 'wiki') return false;
+      return item.id === 'guia' ? !NAV_DIRECT_TOPICS.includes(wikiTab.value) : wikiTab.value === item.topic;
+    };
+    function goNav(item) {
+      menuOpen.value = false;
+      if (item.id === 'mapa') view.value = 'map'; else openTopic(item.topic);
+    }
+    const closeMenuOutside = (e) => { if (menuOpen.value && !e.target.closest('.app-header')) menuOpen.value = false; };
+    const closeMenuEsc = (e) => { if (e.key === 'Escape') menuOpen.value = false; };
+    document.addEventListener('click', closeMenuOutside);
+    document.addEventListener('keydown', closeMenuEsc);
     const wikiEl = ref(null);
     const sidebarEl = ref(null);
 
@@ -731,7 +758,7 @@ const App = {
     const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
     const todayId = computed(() => caracasNow().day);
 
-    // ── Aprende: portada + una página por tema ─────────────
+    // ── Guía: portada + una página por tema ─────────────
     const topicIndex = computed(() => LEARN_TOPICS.findIndex(t => t.id === wikiTab.value));
     const topic = computed(() => LEARN_TOPICS[topicIndex.value] || null);
     const prevTopic = computed(() => LEARN_TOPICS[topicIndex.value - 1] || null);
@@ -758,11 +785,11 @@ const App = {
       nextTick(() => { if (wikiEl.value) wikiEl.value.scrollTo({ top: 0, behavior: 'instant' }); });
     }
 
-    // La URL refleja dónde estás (#aprende, #aprende/historia) para que "atrás" y los enlaces funcionen
-    const hashFor = () => view.value === 'map' ? '' : (wikiTab.value ? '#aprende/' + wikiTab.value : '#aprende');
+    // La URL refleja dónde estás (#guia, #guia/historia) para que "atrás" y los enlaces funcionen
+    const hashFor = () => view.value === 'map' ? '' : (wikiTab.value ? '#guia/' + wikiTab.value : '#guia');
     function readHash() {
       const [section, id] = location.hash.replace(/^#/, '').split('/');
-      if (section === 'aprende') {
+      if (section === 'guia' || section === 'aprende') {   // «aprende» era el nombre anterior: se siguen aceptando esos enlaces
         view.value = 'wiki';
         wikiTab.value = LEARN_TOPICS.some(t => t.id === id) ? id : null;
       } else {
@@ -776,7 +803,7 @@ const App = {
         try { history.pushState(null, '', next || location.pathname + location.search); } catch (e) { /* file:// */ }
       }
       if (view.value === 'wiki') {
-        document.title = (topic.value ? topic.value.title : 'Aprende') + ' · Cafecito Caracas';
+        document.title = (topic.value ? topic.value.title : 'Guía del café') + ' · Cafecito Caracas';
       } else {
         document.title = activeCafe.value ? `${activeCafe.value.name} · Cafecito Caracas` : 'Cafecito Caracas · Mapa de cafeterías';
       }
@@ -987,6 +1014,8 @@ const App = {
 
     onUnmounted(() => {
       window.removeEventListener('popstate', readHash);
+      document.removeEventListener('click', closeMenuOutside);
+      document.removeEventListener('keydown', closeMenuEsc);
       destroyMiniMap();
       clearTimeout(liveTimer);
       if (liveAbort) liveAbort.abort();
@@ -998,7 +1027,7 @@ const App = {
       METHOD_OPTIONS: methodOptions, SNACK_OPTIONS: snackOptions, HOOD_OPTIONS: hoodOptions,
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
-      LEARN_TOPICS, wikiEl, sidebarEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
+      NAV, navActive, goNav, menuOpen, LEARN_TOPICS, wikiEl, sidebarEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
       cafePhoto, photoFailed, mapsUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
       topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
       METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,

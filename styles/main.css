@@ -41,6 +41,7 @@ a { color: var(--caramel-dark); }
 
 /* ── Header ─────────────────────────────────────────────── */
 .app-header {
+  position: relative;
   height: var(--header-h);
   flex: none;
   display: flex;
@@ -57,6 +58,7 @@ a { color: var(--caramel-dark); }
 .app-logo-text { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; letter-spacing: .01em; }
 .app-logo-text em { font-style: normal; color: var(--caramel); }
 .main-nav { display: flex; gap: 4px; margin-left: 12px; }
+.nav-toggle { display: none; }
 .nav-btn {
   display: inline-flex; align-items: center; text-decoration: none; background: transparent; border: 0; padding: 8px 14px; border-radius: 999px;
   color: #d9c9b6; font-weight: 500; transition: background .15s, color .15s;
@@ -477,3 +479,22 @@ a, button, summary, .chip, .cafe-card { touch-action: manipulation; -webkit-tap-
 .sidebar, .wiki-page { overscroll-behavior: contain; }
 .learn-title, .sec-title, .row-title, .detail-name, .idx-title, .pager-name, .learn-close-title { text-wrap: balance; }
 .header-badge, .results-count, .chip small, .credits-count { font-variant-numeric: tabular-nums; }
+
+/* Menú superior: en pantallas estrechas se pliega en un desplegable */
+.nav-toggle-bars, .nav-toggle-bars::before, .nav-toggle-bars::after { display: block; width: 20px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .2s; }
+.nav-toggle-bars { position: relative; }
+.nav-toggle-bars::before, .nav-toggle-bars::after { content: ''; position: absolute; left: 0; }
+.nav-toggle-bars::before { top: -6px; } .nav-toggle-bars::after { top: 6px; }
+@media (max-width: 860px) { .main-nav { gap: 0; } .nav-btn { padding: 7px 10px; } }
+@media (max-width: 640px) {
+  .nav-toggle { display: inline-grid; place-items: center; width: 44px; height: 40px; margin-left: auto; border: 0; border-radius: 10px; background: transparent; color: var(--crema); }
+  .nav-toggle:hover { background: rgba(255, 255, 255, .08); }
+  .main-nav {
+    position: absolute; top: 100%; left: 0; right: 0; margin: 0; flex-direction: column; gap: 2px; padding: 8px 12px 14px;
+    background: var(--espresso); box-shadow: 0 14px 28px rgba(0, 0, 0, .3);
+    opacity: 0; transform: translateY(-8px); visibility: hidden; pointer-events: none;
+    transition: opacity .18s, transform .18s, visibility .18s;
+  }
+  .main-nav.open { opacity: 1; transform: none; visibility: visible; pointer-events: auto; }
+  .nav-btn { padding: 12px 14px; font-size: 1rem; }
+}
