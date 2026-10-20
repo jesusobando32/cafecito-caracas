@@ -19,6 +19,9 @@ tests/validate.js Validación de datos:  node tests/validate.js
 
 Para verlo en local: `python -m http.server 8000` y abre http://localhost:8000.
 
+## Búsqueda en vivo
+Al abrir el mapa y al moverlo, la app consulta la **Overpass API** de OpenStreetMap (sin clave) y añade las cafeterías (`amenity=cafe`) de la zona visible. Los locales de `data/cafes.js` son los curados (con tipo, métodos, snacks y fuentes) y tienen prioridad; los que llegan en vivo aparecen como *por confirmar*. Si Overpass no responde, se muestran solo los guardados.
+
 ## De dónde salen los datos
 - **Posiciones y nombres:** OpenStreetMap (ODbL). Las coordenadas son las del mapa, no aproximaciones.
 - **Barrio:** Nominatim (geocodificación inversa), con correcciones manuales.

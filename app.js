@@ -27,12 +27,51 @@ const TYPE_INFO = {
 const TYPE_OPTIONS = ['cafeteria', 'especialidad'];
 
 const uniqSorted = (arr) => [...new Set(arr)].sort((a, b) => a.localeCompare(b, 'es'));
-const METHOD_OPTIONS = uniqSorted(CAFES_DATA.flatMap(c => c.methods));
-const SNACK_OPTIONS = uniqSorted(CAFES_DATA.flatMap(c => c.snacks));
-const HOOD_OPTIONS = uniqSorted(CAFES_DATA.map(c => c.neighborhood));
 
-// Encuadre inicial: se ajusta a todas las cafeterías (Caricuao → Petare, La Trinidad, El Hatillo)
+// Encuadre inicial: se ajusta a todas las cafeterías curadas (Caricuao → Petare, La Trinidad, El Hatillo)
 const ZONE_BOUNDS = L.latLngBounds(CAFES_DATA.map(c => [c.lat, c.lng])).pad(0.06);
+
+// ── Búsqueda en vivo (OpenStreetMap vía Overpass API) ────────
+// CAFES_DATA son los locales curados (con tipo/métodos/snacks y fuente); lo demás se pide a Overpass
+// según la zona visible del mapa y se mezcla, sin duplicar por id de OSM.
+const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const LIVE_MAX_SPAN = 0.4;   // grados; evita pedir áreas enormes a Overpass
+const LIVE_TIMEOUT_MS = 30000;
+const CURATED_OSM = new Set(CAFES_DATA.map(c => c.osm).filter(Boolean));
+
+async function fetchOverpassCafes(bounds, signal) {
+  const bb = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+  const data = `[out:json][timeout:25];(node["amenity"="cafe"](${bb});way["amenity"="cafe"](${bb}););out center tags;`;
+  let lastErr;
+  for (const url of OVERPASS_URLS) {
+    try {
+      const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data }), signal });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return (await res.json()).elements || [];
+    } catch (err) {
+      if (signal.aborted) throw err;
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+function liveToCafe(el) {
+  const t = el.tags || {};
+  const lat = el.lat ?? (el.center && el.center.lat);
+  const lng = el.lon ?? (el.center && el.center.lon);
+  const osm = el.type[0] + el.id;
+  if (!t.name || lat == null || lng == null || CURATED_OSM.has(osm)) return null;
+  const neighborhood = t['addr:suburb'] || t['addr:neighbourhood'] || 'Sin barrio';
+  const street = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ');
+  return {
+    id: osm, osm, name: t.name,
+    type: 'cafeteria', typeConfirmed: false,
+    neighborhood, address: street || (neighborhood !== 'Sin barrio' ? neighborhood : 'Dirección sin confirmar'),
+    lat, lng, schedule: null, methods: [], drinks: [], snacks: [], description: '',
+    sources: [`https://www.openstreetmap.org/${el.type}/${el.id}`],
+  };
+}
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -220,6 +259,10 @@ const App = {
           </section>
 
           <p class="results-count" aria-live="polite"><strong>{{ filteredCafes.length }}</strong> {{ filteredCafes.length === 1 ? 'resultado' : 'resultados' }}</p>
+          <p class="live-status" :class="'live-' + liveState" aria-live="polite">
+            <span class="live-dot"></span>{{ liveText }}
+            <button v-if="liveState !== 'loading'" class="btn-link" type="button" @click="refreshLive">Actualizar</button>
+          </p>
 
           <ul class="cafe-list" ref="listEl">
             <li v-if="!filteredCafes.length" class="empty-state">
@@ -342,10 +385,70 @@ const App = {
 
     const map = shallowRef(null);
     let cluster = null;
-    const markers = {};
-    const totalCount = CAFES_DATA.length;
+    const markers = new Map();   // id -> { marker, cafe }
 
-    const activeCafe = computed(() => CAFES_DATA.find(c => c.id === activeId.value) || null);
+    // Curados + los que llegan en vivo desde Overpass
+    const liveCafes = shallowRef([]);
+    const cafes = computed(() => [...CAFES_DATA, ...liveCafes.value]);
+    const totalCount = computed(() => cafes.value.length);
+    const methodOptions = computed(() => uniqSorted(cafes.value.flatMap(c => c.methods)));
+    const snackOptions = computed(() => uniqSorted(cafes.value.flatMap(c => c.snacks)));
+    const hoodOptions = computed(() => uniqSorted(cafes.value.map(c => c.neighborhood)));
+
+    const liveState = ref('idle');   // idle | loading | ok | zoom | error
+    const liveUpdated = ref(null);
+    const liveText = computed(() => ({
+      idle: 'Buscando cafeterías en la zona…',
+      loading: 'Buscando en OpenStreetMap…',
+      ok: `En vivo desde OpenStreetMap${liveUpdated.value ? ' · ' + liveUpdated.value : ''}`,
+      zoom: 'Acerca el mapa para buscar más cafeterías en vivo',
+      error: 'Sin conexión con OpenStreetMap: mostrando los locales guardados',
+    })[liveState.value]);
+
+    const liveById = new Map();
+    const fetchedAreas = [];
+    let liveAbort = null;
+    let liveTimer = null;
+
+    async function loadLive({ force = false } = {}) {
+      const m = map.value;
+      if (!m) return;
+      const view = m.getBounds();
+      if (view.getNorth() - view.getSouth() > LIVE_MAX_SPAN || view.getEast() - view.getWest() > LIVE_MAX_SPAN) {
+        liveState.value = liveUpdated.value ? 'ok' : 'zoom';
+        return;
+      }
+      if (!force && fetchedAreas.some(a => a.contains(view))) { liveState.value = 'ok'; return; }
+
+      if (liveAbort) liveAbort.abort();
+      const ctrl = liveAbort = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), LIVE_TIMEOUT_MS);
+      const area = view.pad(0.25);
+      liveState.value = 'loading';
+      try {
+        const elements = await fetchOverpassCafes(area, ctrl.signal);
+        elements.map(liveToCafe).filter(Boolean).forEach(c => liveById.set(c.id, c));
+        liveCafes.value = [...liveById.values()];
+        fetchedAreas.push(area);
+        liveUpdated.value = new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+        liveState.value = 'ok';
+      } catch (err) {
+        if (ctrl !== liveAbort) return;   // reemplazada por una búsqueda más reciente
+        liveState.value = 'error';
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+    function scheduleLive() {
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => loadLive(), 600);
+    }
+    function refreshLive() {
+      fetchedAreas.length = 0;
+      loadLive({ force: true });
+    }
+
+    const activeCafe = computed(() => cafes.value.find(c => c.id === activeId.value) || null);
     const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
     const todayId = computed(() => caracasNow().day);
 
@@ -372,13 +475,13 @@ const App = {
     }
 
     const filteredCafes = computed(() =>
-      CAFES_DATA.filter(c => matches(c)).sort((a, b) => a.name.localeCompare(b.name, 'es')));
+      cafes.value.filter(c => matches(c)).sort((a, b) => a.name.localeCompare(b.name, 'es')));
 
     // Cuántos resultados daría cada opción de filtro con el resto de filtros aplicados
     const facet = computed(() => {
       const count = (skip, pick) => {
         const out = {};
-        CAFES_DATA.filter(c => matches(c, skip)).forEach(c => pick(c).forEach(v => { out[v] = (out[v] || 0) + 1; }));
+        cafes.value.filter(c => matches(c, skip)).forEach(c => pick(c).forEach(v => { out[v] = (out[v] || 0) + 1; }));
         return out;
       };
       return {
@@ -435,16 +538,27 @@ const App = {
 
     // ── Mapa ───────────────────────────────────────────────
     function refreshIcons() {
-      Object.entries(markers).forEach(([id, marker]) => {
-        const cafe = CAFES_DATA.find(c => c.id === Number(id));
-        marker.setIcon(createMarkerIcon(cafe, Number(id) === activeId.value));
-      });
+      markers.forEach(({ marker, cafe }, id) => marker.setIcon(createMarkerIcon(cafe, id === activeId.value)));
+    }
+
+    function getMarker(cafe) {
+      let entry = markers.get(cafe.id);
+      if (!entry) {
+        const marker = L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, cafe.id === activeId.value), title: cafe.name, keyboard: true });
+        marker.bindTooltip(cafe.name, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
+        marker.on('click', () => select(cafe));
+        marker.on('mouseover', () => { hoverId.value = cafe.id; });
+        marker.on('mouseout', () => { hoverId.value = null; });
+        entry = { marker, cafe };
+        markers.set(cafe.id, entry);
+      }
+      return entry.marker;
     }
 
     function syncMarkers() {
       if (!cluster) return;
       cluster.clearLayers();
-      cluster.addLayers(filteredCafes.value.map(c => markers[c.id]));
+      cluster.addLayers(filteredCafes.value.map(getMarker));
     }
 
     function fitToResults() {
@@ -457,8 +571,9 @@ const App = {
       map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6 });
     }
 
-    watch(filteredCafes, () => {
-      syncMarkers();
+    watch(filteredCafes, syncMarkers, { flush: 'post' });
+    // Solo al cambiar filtros: si encuadrara también al llegar datos en vivo, mover el mapa dispararía otra búsqueda
+    watch([query, selTypes, selMethods, selSnacks, selHood], () => {
       if (!activeId.value) fitToResults();
     }, { flush: 'post' });
 
@@ -479,24 +594,25 @@ const App = {
           disableClusteringAtZoom: 16,
           iconCreateFunction: clusterIcon,
         });
-        CAFES_DATA.forEach((cafe) => {
-          const marker = L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, false), title: cafe.name, keyboard: true });
-          marker.bindTooltip(cafe.name, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
-          marker.on('click', () => select(cafe));
-          marker.on('mouseover', () => { hoverId.value = cafe.id; });
-          marker.on('mouseout', () => { hoverId.value = null; });
-          markers[cafe.id] = marker;
-        });
         m.addLayer(cluster);
         syncMarkers();
         setTimeout(() => m.invalidateSize(), 250);
+
+        m.on('moveend', scheduleLive);
+        loadLive();
       });
     });
 
-    onUnmounted(() => { if (map.value) { map.value.remove(); map.value = null; } });
+    onUnmounted(() => {
+      clearTimeout(liveTimer);
+      if (liveAbort) liveAbort.abort();
+      if (map.value) { map.value.remove(); map.value = null; }
+    });
 
     return {
-      WIKI_DATA, TYPE_INFO, TYPE_OPTIONS, METHOD_OPTIONS, SNACK_OPTIONS, HOOD_OPTIONS,
+      WIKI_DATA, TYPE_INFO, TYPE_OPTIONS,
+      METHOD_OPTIONS: methodOptions, SNACK_OPTIONS: snackOptions, HOOD_OPTIONS: hoodOptions,
+      liveState, liveText, refreshLive,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
       query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
