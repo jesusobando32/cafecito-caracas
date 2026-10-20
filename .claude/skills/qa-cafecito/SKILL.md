@@ -13,7 +13,9 @@ description: Corre la batería de QA de Cafecito Caracas (datos, escritorio y m�
    - móvil: `audit-movil.js`, `accesibilidad-axe.js`, `datos-extremos.js`
 5. **Criterio:** `errors`, `broken`, `overflow` vacíos; axe sin violaciones; `xss-nombres` con `pwned:false`.
    Ignora los avisos "Expected value to be of type number" de MapLibre y los errores de red de Overpass si está caído.
-6. Informa qué pasó y qué falló; si algo falla, mira la captura (`playwright-cli screenshot`) antes de tocar código.
-7. Cierra: `playwright-cli close-all` y detén el servidor.
+6. **Visual:** `playwright-cli -s=web run-code --filename=tests/visual/capture.js` (y lo mismo en `mov`), luego `python tests/visual/compare.py`; si el cambio es intencional, copia `actual/` a `baseline/`.
+   **Rendimiento (si se tocó carga o mapa):** `tests/perf/README.md`. **Otros navegadores:** sesiones `--browser=msedge` y `--browser=webkit`, y `--device="iPhone 15"` para móvil.
+7. Informa qué pasó y qué falló; si algo falla, mira la captura (`playwright-cli screenshot`) antes de tocar código.
+8. Cierra: `playwright-cli close-all` y detén el servidor.
 
-Limitaciones: no cubre un teléfono real ni arrastre táctil (se simula con ratón), ni la clave de Google Places.
+Limitaciones: Firefox no arrancó en el equipo de desarrollo (`spawn UNKNOWN`); no cubre un teléfono real ni arrastre táctil (se simula con ratón), ni la clave de Google Places.

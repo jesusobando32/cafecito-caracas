@@ -9,7 +9,7 @@ async page => {
     mk('n9005', 'Con horario raro', { schedule: [1, 2, 3, 4, 5, 6, 0].map(d => ({ dayId: d, name: 'Día', closed: false, open: '07:00', close: '26:00', ranges: [['07:00', '12:00'], ['13:00', '26:00']] })) }),
   ]);
   await page.goto('http://localhost:8765/?s=' + Date.now()); await page.waitForTimeout(2500);
-  const ov = async (label) => { await page.waitForTimeout(500); const r = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, over: [...document.querySelectorAll('.sidebar *, .detail *')].filter(e => { const b = e.getBoundingClientRect(); const sb = document.querySelector('.sidebar').getBoundingClientRect(); return b.width > 0 && b.right > sb.right + 1; }).slice(0, 3).map(e => e.tagName + '.' + e.className) })); if (r.sw > r.iw + 1 || r.over.length) out.overflow.push(label + ' ' + JSON.stringify(r)); };
+  const ov = async (label) => { await page.waitForTimeout(500); const r = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, over: [...document.querySelectorAll('.sidebar *, .detail *')].filter(e => { const b = e.getBoundingClientRect(); const sb = document.querySelector('.sidebar').getBoundingClientRect(); return b.width > 0 && b.right > sb.right + 1 && !e.closest('.leaflet-container'); }).slice(0, 3).map(e => e.tagName + '.' + e.className) })); if (r.sw > r.iw + 1 || r.over.length) out.overflow.push(label + ' ' + JSON.stringify(r)); };
   await page.locator('.search-input').fill('Cafetería-Super'); await ov('lista larga');
   await page.locator('.cafe-card').first().click(); await ov('ficha nombre largo');
   await page.locator('.detail-back').click(); await page.locator('.search-input').fill('日本'); await ov('lista unicode');

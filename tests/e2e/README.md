@@ -22,3 +22,6 @@ playwright-cli -s=mov run-code --filename=tests/e2e/audit-movil.js
 ```
 Ojo: tras cambiar `app.js` cierra y vuelve a abrir la sesión (`playwright-cli -s=web close`), porque el navegador cachea los scripts.
 Los datos de prueba se guardan en `localStorage` del propio navegador de Playwright; no tocan tu navegador.
+
+Otros navegadores: `playwright-cli -s=<nombre> open <url> --browser=msedge|webkit` o `--device="iPhone 15"`. Probado en Chrome, Edge, Safari (WebKit) e iPhone 15 emulado; Firefox no arrancó en el equipo de desarrollo.
+Visual: `tests/visual/`. Rendimiento: `tests/perf/`.
