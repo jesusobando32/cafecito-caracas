@@ -154,14 +154,26 @@ function formatTime(time24) {
   return `${hours % 12 || 12}:${m} ${ampm}`;
 }
 
+const dayRangeList = (d) => d.ranges || [[d.open, d.close]];
+const dayRanges = (d) => dayRangeList(d).map(([o, c]) => `${formatTime(o)} – ${formatTime(c)}`).join(' y ');
+
 function getStatus(schedule) {
   if (!schedule) return { state: 'unknown', text: 'Horario sin confirmar' };
   const { day, minutes } = caracasNow();
+  // Un local que cierra pasada la medianoche (p. ej. 26:00) sigue abierto de madrugada del día siguiente
+  const yesterday = schedule.find(s => s.dayId === (day + 6) % 7);
+  if (yesterday && !yesterday.closed) {
+    const last = dayRangeList(yesterday).slice(-1)[0];
+    if (toMinutes(last[1]) > 1440 && minutes < toMinutes(last[1]) - 1440) return { state: 'open', text: `Abierto hasta las ${formatTime(last[1])}` };
+  }
   const today = schedule.find(s => s.dayId === day);
   if (!today || today.closed) return { state: 'closed', text: 'Cerrado hoy' };
-  const open = toMinutes(today.open), close = toMinutes(today.close);
-  if (minutes >= open && minutes < close) return { state: 'open', text: `Abierto hasta las ${formatTime(today.close)}` };
-  if (minutes < open) return { state: 'closed', text: `Abre hoy a las ${formatTime(today.open)}` };
+  const ranges = dayRangeList(today);
+  for (const [o, c] of ranges) {
+    if (minutes >= toMinutes(o) && minutes < toMinutes(c)) return { state: 'open', text: `Abierto hasta las ${formatTime(c)}` };
+  }
+  const next = ranges.find(([o]) => minutes < toMinutes(o));
+  if (next) return { state: 'closed', text: `Abre hoy a las ${formatTime(next[0])}` };
   return { state: 'closed', text: 'Cerrado ahora' };
 }
 
@@ -218,35 +230,33 @@ const App = {
         <article v-if="activeCafe" class="detail" aria-live="polite">
           <button class="detail-back" @click="closeDetail" type="button">← Volver a la lista</button>
 
+          <figure class="cafe-photo">
+            <img v-if="cafePhoto" :src="cafePhoto.src" :alt="'Foto de ' + activeCafe.name" loading="lazy" decoding="async" referrerpolicy="no-referrer" @error="photoFailed = true" />
+            <div v-else class="cafe-photo-fallback" :class="'type-' + activeCafe.type" v-html="CAFE_FALLBACK_SVG" role="img" aria-label="Ilustración de una cafetería: este local aún no tiene foto"></div>
+            <figcaption v-if="cafePhoto && cafePhoto.author">
+              Foto: <a v-if="cafePhoto.authorUrl" :href="cafePhoto.authorUrl" target="_blank" rel="noopener">{{ cafePhoto.author }}</a><template v-else>{{ cafePhoto.author }}</template>
+              <template v-if="cafePhoto.google"> · Google Maps</template>
+            </figcaption>
+          </figure>
+
           <header class="detail-head">
             <span class="type-chip" :class="'type-' + activeCafe.type">{{ TYPE_INFO[activeCafe.type].label }}</span>
             <span v-if="!activeCafe.typeConfirmed" class="tag tag-muted" title="La categoría aún no tiene fuente">por confirmar</span>
             <h1 class="detail-name">{{ activeCafe.name }}</h1>
-            <p class="detail-address">📍 {{ activeCafe.address }}</p>
             <div class="status" :class="'status-' + activeStatus.state"><span class="status-dot"></span>{{ activeStatus.text }}</div>
             <p v-if="activeCafe.google && activeCafe.google.rating" class="detail-rating">⭐ {{ activeCafe.google.rating.toFixed(1) }} <span class="muted">({{ activeCafe.google.ratingCount }} reseñas en Google)</span></p>
             <p v-if="googleLoading" class="muted">Consultando Google Maps…</p>
           </header>
 
-          <p v-if="activeCafe.description" class="detail-desc">{{ activeCafe.description }}</p>
-
           <section class="detail-section">
-            <h2 class="detail-label">Métodos de preparación</h2>
-            <div v-if="activeCafe.methods.length" class="tag-row">
-              <button v-for="m in activeCafe.methods" :key="m" class="tag tag-method" @click="openWikiMethod(m)" type="button" title="Aprende sobre este método">{{ m }}</button>
+            <h2 class="detail-label">Ubicación</h2>
+            <div class="minimap">
+              <div id="minimap" class="minimap-canvas"></div>
+              <a class="minimap-link" :href="mapsUrl(activeCafe)" target="_blank" rel="noopener" :aria-label="'Abrir ' + activeCafe.name + ' en Google Maps'">
+                <span class="minimap-cta">Abrir en Google Maps ↗</span>
+              </a>
             </div>
-            <p v-else class="muted">Sin confirmar.</p>
-          </section>
-
-          <section v-if="activeCafe.drinks.length" class="detail-section">
-            <h2 class="detail-label">Bebidas destacadas</h2>
-            <div class="tag-row"><span v-for="d in activeCafe.drinks" :key="d" class="tag">{{ d }}</span></div>
-          </section>
-
-          <section class="detail-section">
-            <h2 class="detail-label">Snacks y comida</h2>
-            <div v-if="activeCafe.snacks.length" class="tag-row"><span v-for="s in activeCafe.snacks" :key="s" class="tag tag-food">{{ s }}</span></div>
-            <p v-else class="muted">Sin confirmar.</p>
+            <p class="detail-address">📍 {{ activeCafe.address }}</p>
           </section>
 
           <section class="detail-section">
@@ -254,25 +264,45 @@ const App = {
             <ul v-if="activeCafe.schedule" class="schedule">
               <li v-for="day in activeCafe.schedule" :key="day.dayId" :class="{ 'is-today': day.dayId === todayId }">
                 <span>{{ day.name }}</span>
-                <span v-if="!day.closed">{{ formatTime(day.open) }} – {{ formatTime(day.close) }}</span>
+                <span v-if="!day.closed">{{ dayRanges(day) }}</span>
                 <span v-else class="muted">Cerrado</span>
               </li>
             </ul>
-            <p v-else class="muted">Sin horario confirmado.</p>
+            <p v-else class="muted">Horario sin confirmar. <a :href="mapsUrl(activeCafe)" target="_blank" rel="noopener">Ver horario en Google Maps</a></p>
           </section>
 
           <div class="detail-actions">
             <a class="btn btn-primary" :href="directionsUrl(activeCafe)" target="_blank" rel="noopener">Cómo llegar</a>
-            <a v-if="activeCafe.google && activeCafe.google.mapsUri" class="btn" :href="activeCafe.google.mapsUri" target="_blank" rel="noopener">Ver en Google Maps</a>
             <a v-if="activeCafe.google && activeCafe.google.website" class="btn" :href="activeCafe.google.website" target="_blank" rel="noopener">Sitio web</a>
             <a class="btn" :href="issueUrl(activeCafe)" target="_blank" rel="noopener">¿Falta algo? Aporta datos</a>
           </div>
+
+          <p v-if="activeCafe.description" class="detail-desc">{{ activeCafe.description }}</p>
+
+          <section v-if="activeCafe.methods.length" class="detail-section">
+            <h2 class="detail-label">Métodos de preparación</h2>
+            <div class="tag-row">
+              <button v-for="m in activeCafe.methods" :key="m" class="tag tag-method" @click="openWikiMethod(m)" type="button" title="Aprende sobre este método">{{ m }}</button>
+            </div>
+          </section>
+
+          <section v-if="activeCafe.drinks.length" class="detail-section">
+            <h2 class="detail-label">Bebidas destacadas</h2>
+            <div class="tag-row"><span v-for="d in activeCafe.drinks" :key="d" class="tag">{{ d }}</span></div>
+          </section>
+
+          <section v-if="activeCafe.snacks.length" class="detail-section">
+            <h2 class="detail-label">Snacks y comida</h2>
+            <div class="tag-row"><span v-for="s in activeCafe.snacks" :key="s" class="tag tag-food">{{ s }}</span></div>
+          </section>
+
           <p v-if="activeCafe.google" class="detail-sources">Horario y valoración: Google Maps</p>
           <p v-if="activeCafe.sources.length" class="detail-sources">
             Fuentes:
             <template v-for="(s, i) in activeCafe.sources" :key="s"><a :href="s" target="_blank" rel="noopener">[{{ i + 1 }}]</a> </template>
           </p>
         </article>
+
 
         <!-- Filtros y lista -->
         <template v-else>
@@ -762,6 +792,38 @@ const App = {
 
     const statusOf = (cafe) => getStatus(cafe.schedule);
     const directionsUrl = (c) => `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`;
+    // Ficha del lugar en Google Maps (con horario, fotos y reseñas); no requiere clave
+    const mapsUrl = (c) => (c.google && c.google.mapsUri)
+      || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name} ${c.lat},${c.lng}`)}`;
+
+    // Foto de la ficha: la propia (data/photos.js) > Google Maps (con clave) > dibujo de cafetería
+    const photoFailed = ref(false);
+    const cafePhoto = computed(() => {
+      const c = activeCafe.value;
+      if (!c || photoFailed.value) return null;
+      const own = c.osm && CAFE_PHOTOS[c.osm];
+      if (own) return own;
+      return c.google && c.google.photo ? { ...c.google.photo, google: true } : null;
+    });
+    watch(activeId, () => { photoFailed.value = false; });
+
+    // Mapita fijo de la ficha: sin interacción; el enlace superpuesto abre Google Maps
+    let miniMap = null;
+    function destroyMiniMap() { if (miniMap) { miniMap.remove(); miniMap = null; } }
+    function mountMiniMap() {
+      destroyMiniMap();
+      const cafe = activeCafe.value;
+      const el = document.getElementById('minimap');
+      if (!cafe || !el) return;
+      miniMap = L.map(el, {
+        center: [cafe.lat, cafe.lng], zoom: 16, zoomControl: false, attributionControl: false,
+        dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false,
+      });
+      L.tileLayer(TILE_URL, { maxZoom: 19, className: 'base-tiles' }).addTo(miniMap);
+      L.control.attribution({ prefix: false }).addAttribution(TILE_ATTRIBUTION).addTo(miniMap);
+      L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, false), interactive: false, keyboard: false }).addTo(miniMap);
+    }
+    watch(() => activeCafe.value && activeCafe.value.id, () => nextTick(mountMiniMap), { flush: 'post' });
 
     // ── Selección ──────────────────────────────────────────
     function select(cafe, { fly = true } = {}) {
@@ -860,6 +922,7 @@ const App = {
 
     onUnmounted(() => {
       window.removeEventListener('popstate', readHash);
+      destroyMiniMap();
       clearTimeout(liveTimer);
       if (liveAbort) liveAbort.abort();
       if (map.value) { map.value.remove(); map.value = null; }
@@ -871,6 +934,7 @@ const App = {
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       LEARN_TOPICS, wikiEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
+      cafePhoto, photoFailed, mapsUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
       topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
       METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,
       view, mobileView,

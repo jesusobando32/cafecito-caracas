@@ -198,6 +198,23 @@ a { color: var(--caramel-dark); }
 .detail-address { margin: 0 0 10px; color: var(--muted); font-size: .9rem; }
 .detail-desc { margin: 14px 0; padding: 12px 14px; background: var(--crema); border-radius: 12px; font-size: .92rem; }
 .detail-section { margin-top: 18px; }
+/* Foto y mapita de la ficha */
+.cafe-photo { margin: 0 0 14px; }
+.cafe-photo img, .cafe-photo-fallback { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 14px; background: #e8dccb; overflow: hidden; }
+.cafe-photo-fallback { --fb-accent: var(--caramel); --fb-sky: #f1e4d3; --fb-wall: #fffdf9; }
+.cafe-photo-fallback.type-especialidad { --fb-accent: #2f5d3a; --fb-sky: #dbe8d6; }
+.cafe-photo-fallback svg { display: block; width: 100%; height: 100%; }
+.cafe-photo figcaption { margin-top: 5px; font-size: .7rem; color: var(--muted); }
+.cafe-photo figcaption a { color: inherit; }
+.detail-rating { margin: 6px 0 0; font-size: .9rem; font-weight: 600; }
+.minimap { position: relative; height: 170px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e8e2d6; }
+.minimap-canvas { position: absolute; inset: 0; pointer-events: none; }
+.minimap-canvas .leaflet-control-attribution { pointer-events: auto; font-size: .62rem; }
+.minimap-link { position: absolute; inset: 0 0 18px 0; z-index: 800; display: flex; align-items: flex-end; justify-content: flex-start; padding: 8px; text-decoration: none; }
+.minimap-cta { background: rgba(43, 29, 20, .88); color: #fff; font-size: .75rem; font-weight: 600; padding: 5px 10px; border-radius: 999px; }
+.minimap-link:hover .minimap-cta, .minimap-link:focus-visible .minimap-cta { background: var(--caramel-dark); }
+.detail-address { margin: 8px 0 0; }
+
 .detail-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
 .tag-row { display: flex; flex-wrap: wrap; gap: 7px; }
 .schedule { list-style: none; margin: 0; padding: 0; font-size: .88rem; }

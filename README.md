@@ -12,6 +12,10 @@ index.html        Estructura y librerías
 app.js            Aplicación Vue (filtros, mapa, detalle, Aprende con rutas #aprende/tema)
 places.js         Horarios OSM y Google Places opcional
 config.js         Clave opcional de Google Places
+data/photos.js    Fotos propias de locales (opcional, por id de OSM)
+data/images.js    Fotos de Aprende (Wikimedia Commons) con autor y licencia
+data/illustrations.js  Dibujos SVG: diagramas de métodos, cortes de bebidas, cafetería genérica
+img/aprende/      Fotos recortadas (2 tamaños)
 data/cafes.js     Cafeterías (GENERADO por scripts/build_data.py)
 data/wiki.js      Contenido de la pestaña Aprende
 styles/main.css   Estilos
@@ -27,7 +31,12 @@ Al abrir el mapa y al moverlo, la app consulta la **Overpass API** de OpenStreet
 Los horarios simples (`opening_hours`) de los locales en vivo se convierten en el momento. La última búsqueda se guarda en el navegador para que la lista aparezca al instante.
 
 ### Google Maps (opcional)
-Google no permite leer Maps directamente; hay que usar su API oficial (Places API New), que requiere clave y facturación (hay crédito mensual gratuito). Pon la clave en `config.js` (`googlePlacesKey`) y, al abrir la ficha de un local, la app buscará ese lugar en Google (a menos de 150 m) y mostrará **horario, valoración, enlace a Google Maps y sitio web**. Sin clave, esta parte queda desactivada. La clave queda visible en el navegador: restríngela por referrer HTTP (tu dominio de GitHub Pages y `localhost`) y solo a *Places API (New)*.
+Google no permite leer Maps directamente; hay que usar su API oficial (Places API New), que requiere clave y facturación (hay crédito mensual gratuito). Pon la clave en `config.js` (`googlePlacesKey`) y, al abrir la ficha de un local, la app buscará ese lugar en Google (a menos de 150 m) y mostrará **foto, horario, valoración y sitio web** (la foto lleva la atribución que exige Google; esta parte no está probada con una clave real). Sin clave, la ficha muestra una cafetería ilustrada en vez de foto y un botón «Ver horario en Google Maps».
+
+**Fotos propias:** guarda la imagen en `img/cafes/` y regístrala en `data/photos.js` con el id de OSM del local; tiene prioridad sobre la de Google. En Wikimedia Commons no hay fotos libres de estos locales. La clave queda visible en el navegador: restríngela por referrer HTTP (tu dominio de GitHub Pages y `localhost`) y solo a *Places API (New)*.
+
+## Imágenes de Aprende
+Las fotos son de Wikimedia Commons con licencia libre (CC0, CC BY o CC BY-SA); se recortaron y redimensionaron. Cada foto muestra su autor y licencia, y la portada de Aprende lista todos los créditos (salen de `data/images.js`). Los dibujos SVG son propios. Sin foto libre: guayoyo (método) y marrón (bebida), que solo tienen dibujo.
 
 ## De dónde salen los datos
 - **Posiciones y nombres:** OpenStreetMap (ODbL). Las coordenadas son las del mapa, no aproximaciones.
