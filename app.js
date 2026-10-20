@@ -18,6 +18,25 @@ const REPO_URL = 'https://github.com/jesusobando32/cafecito-caracas';
 const CUP_SVG = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2"/><path d="M8 3v2M12 3v2"/></svg>';
 // CARTO ahora exige API key (sus tiles devuelven un aviso); OSM estándar es gratuito con atribución (uso ligero).
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+// Mapa base claro y sin ruido: OpenFreeMap "Positron" (vectorial, gratis y sin clave). Si WebGL o el estilo fallan, se usa OSM raster.
+const BASE_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+const BASE_ATTRIBUTION = '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+const SHEET_HALF = 0.52;   // fracción de la altura que ocupa el panel móvil en estado "half"
+const isMobile = () => window.matchMedia('(max-width: 860px)').matches;
+function hasWebGL() {
+  try { const c = document.createElement('canvas'); return Boolean(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
+}
+function addBaseLayer(m) {
+  const raster = () => L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19, className: 'base-tiles' }).addTo(m);
+  if (!(window.maplibregl && L.maplibreGL && hasWebGL())) { raster(); return; }
+  const gl = L.maplibreGL({ style: BASE_STYLE, attribution: BASE_ATTRIBUTION }).addTo(m);
+  const mgl = gl.getMaplibreMap();
+  let fellBack = false;
+  mgl.on('error', () => {
+    if (fellBack || mgl.isStyleLoaded()) return;
+    fellBack = true; m.removeLayer(gl); raster();
+  });
+}
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const TYPE_INFO = {
@@ -180,10 +199,10 @@ function getStatus(schedule) {
 // ── Marcadores ───────────────────────────────────────────────
 function createMarkerIcon(cafe, selected) {
   return L.divIcon({
-    html: `<span class="pin pin-${cafe.type}${selected ? ' is-selected' : ''}" aria-hidden="true">${CUP_SVG}</span>`,
+    html: `<span class="pin pin-${cafe.type}${selected ? ' is-selected' : ''}" aria-hidden="true"></span>`,
     className: 'pin-wrap',
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   });
 }
 
@@ -192,7 +211,7 @@ function clusterIcon(cluster) {
   return L.divIcon({
     html: `<span class="cluster">${n}</span>`,
     className: 'cluster-wrap',
-    iconSize: [40, 40],
+    iconSize: [36, 36],
   });
 }
 
@@ -223,8 +242,10 @@ const App = {
     </header>
 
     <!-- ═════════ MAPA ═════════ -->
-    <div v-show="view === 'map'" class="app-body" :class="'mobile-' + mobileView">
+    <div v-show="view === 'map'" class="app-body" :class="'sheet-' + sheet">
       <aside class="sidebar" aria-label="Cafeterías">
+        <button class="sheet-handle" type="button" :aria-label="sheet === 'peek' ? 'Ver la lista de cafeterías' : 'Bajar la lista'"
+                @pointerdown="onHandleDown" @pointerup="onHandleUp" @pointercancel="onHandleCancel"><span></span></button>
 
         <!-- Detalle de una cafetería -->
         <article v-if="activeCafe" class="detail" aria-live="polite">
@@ -309,7 +330,7 @@ const App = {
           <section class="filters" aria-label="Filtros">
             <div class="search-wrap">
               <span class="search-icon" aria-hidden="true">🔍</span>
-              <input class="search-input" type="search" v-model="query" placeholder="Buscar por nombre, barrio, snack…" autocomplete="off" aria-label="Buscar cafetería" />
+              <input class="search-input" type="search" v-model="query" @focus="onSearchFocus" placeholder="Buscar por nombre, barrio, snack…" autocomplete="off" aria-label="Buscar cafetería" />
             </div>
 
             <button class="filters-toggle" type="button" @click="filtersOpen = !filtersOpen" :aria-expanded="filtersOpen">
@@ -390,16 +411,7 @@ const App = {
 
       <section class="map-pane" aria-label="Mapa">
         <div id="map" role="application" aria-label="Mapa de cafeterías de Caracas"></div>
-        <div class="map-legend" aria-hidden="true">
-          <span><i class="pin-dot pin-especialidad"></i> Especialidad</span>
-          <span><i class="pin-dot pin-cafeteria"></i> Cafetería</span>
-        </div>
       </section>
-
-      <div class="mobile-switch" role="tablist" aria-label="Vista">
-        <button :class="{ active: mobileView === 'list' }" @click="setMobileView('list')" type="button">☰ Lista</button>
-        <button :class="{ active: mobileView === 'map' }" @click="setMobileView('map')" type="button">🗺️ Mapa</button>
-      </div>
     </div>
 
     <!-- ═════════ APRENDE ═════════ -->
@@ -576,7 +588,7 @@ const App = {
 
   setup() {
     const view = ref('map');          // 'map' | 'wiki'
-    const mobileView = ref('list');   // 'list' | 'map' (solo móvil)
+    const sheet = ref('peek');        // panel móvil: 'peek' | 'half' | 'full'
     const wikiTab = ref(null);        // null = portada de Aprende; si no, id del tema
     const wikiEl = ref(null);
 
@@ -829,9 +841,13 @@ const App = {
     function select(cafe, { fly = true } = {}) {
       activeId.value = cafe.id;
       document.title = `${cafe.name} · Cafecito Caracas`;
-      if (window.matchMedia('(max-width: 860px)').matches) mobileView.value = 'list';
+      if (isMobile()) sheet.value = 'half';
       if (map.value && fly) {
-        map.value.flyTo([cafe.lat, cafe.lng], Math.max(map.value.getZoom(), 16), { duration: 0.7 });
+        const m = map.value, zoom = Math.max(m.getZoom(), 16);
+        let target = L.latLng(cafe.lat, cafe.lng);
+        // En móvil el panel tapa la parte baja: se desplaza el centro para que el pin quede visible arriba
+        if (isMobile()) target = m.unproject(m.project(target, zoom).add([0, m.getSize().y * SHEET_HALF / 2]), zoom);
+        m.flyTo(target, zoom, { duration: 0.7 });
       }
       refreshIcons();
     }
@@ -841,10 +857,22 @@ const App = {
       refreshIcons();
       nextTick(() => fitToResults());
     }
-    function setMobileView(v) {
-      mobileView.value = v;
-      if (v === 'map') nextTick(() => map.value && map.value.invalidateSize());
+    // Panel inferior (móvil): tocar el asa lo alterna; arrastrarla hacia arriba/abajo cambia de estado
+    const SHEETS = ['peek', 'half', 'full'];
+    let dragY = null;
+    function moveSheet(dir) {
+      const i = SHEETS.indexOf(sheet.value) + dir;
+      sheet.value = SHEETS[Math.max(0, Math.min(SHEETS.length - 1, i))];
     }
+    function onHandleDown(e) { dragY = e.clientY; if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId); }
+    function onHandleCancel() { dragY = null; }
+    function onHandleUp(e) {
+      if (dragY === null) return;
+      const dy = e.clientY - dragY; dragY = null;
+      if (Math.abs(dy) < 24) sheet.value = sheet.value === 'peek' ? 'half' : 'peek';   // toque
+      else moveSheet(dy < 0 ? 1 : -1);
+    }
+    function onSearchFocus() { if (isMobile() && sheet.value === 'peek') sheet.value = 'half'; }
     function openWikiMethod(name) {
       openTopic('metodos');
       nextTick(() => {
@@ -885,7 +913,7 @@ const App = {
       const bounds = (activeFilterCount.value || query.value.trim())
         ? L.latLngBounds(list.map(c => [c.lat, c.lng])).pad(0.2)
         : ZONE_BOUNDS;
-      map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6 });
+      map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6, paddingBottomRight: isMobile() ? [0, 150] : [0, 0] });
     }
 
     watch(filteredCafes, syncMarkers, { flush: 'post' });
@@ -898,12 +926,13 @@ const App = {
 
     onMounted(() => {
       nextTick(() => {
-        const m = L.map('map', { zoomControl: false, attributionControl: true, minZoom: 10, maxZoom: 19 });
+        const m = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 10, maxZoom: 19 });
+        L.control.attribution({ prefix: false }).addTo(m);
         L.control.zoom({ position: 'bottomright' }).addTo(m);
-        m.fitBounds(ZONE_BOUNDS);
+        m.fitBounds(ZONE_BOUNDS, { paddingBottomRight: isMobile() ? [0, 150] : [0, 0] });
         map.value = m;
 
-        L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19, className: 'base-tiles' }).addTo(m);
+        addBaseLayer(m);
 
         cluster = L.markerClusterGroup({
           showCoverageOnHover: false,
@@ -916,6 +945,7 @@ const App = {
         setTimeout(() => m.invalidateSize(), 250);
 
         m.on('moveend', scheduleLive);
+        m.on('click', () => { if (isMobile() && sheet.value !== 'peek') sheet.value = 'peek'; });
         loadLive();
       });
     });
@@ -937,11 +967,11 @@ const App = {
       cafePhoto, photoFailed, mapsUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
       topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
       METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,
-      view, mobileView,
+      view, sheet, onHandleDown, onHandleUp, onHandleCancel, onSearchFocus,
       query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
       filteredCafes, facet, activeFilterCount,
-      toggle, clearFilters, select, closeDetail, setMobileView, openWikiMethod,
+      toggle, clearFilters, select, closeDetail, openWikiMethod,
       statusOf, directionsUrl, issueUrl, formatTime,
     };
   },

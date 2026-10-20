@@ -5,7 +5,7 @@ Buscador de cafeterías de Caracas — de Caricuao a Petare, con La Trinidad y E
 **Sitio:** https://jesusobando32.github.io/cafecito-caracas/
 
 ## Cómo está hecho
-Sitio 100 % estático (sin build): Vue 3 + Leaflet + leaflet.markercluster por CDN. Mapa base de OpenStreetMap, suavizado con CSS.
+Sitio 100 % estático (sin build): Vue 3 + Leaflet + leaflet.markercluster por CDN. Mapa base claro de OpenFreeMap («Positron», sin clave; MapLibre GL) con respaldo a OpenStreetMap si falla WebGL o la red. En móvil el mapa ocupa toda la pantalla y la lista va en un panel inferior deslizable.
 
 ```
 index.html        Estructura y librerías

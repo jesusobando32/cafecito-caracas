@@ -223,32 +223,28 @@ a { color: var(--caramel-dark); }
 .detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .detail-sources { font-size: .78rem; color: var(--muted); margin-top: 14px; }
 
-/* ── Marcadores y agrupaciones ──────────────────────────── */
+/* ── Marcadores y agrupaciones (sobrios: punto de color, sin iconos) ── */
 .pin-wrap, .cluster-wrap { background: none; border: 0; }
 .pin {
-  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 16px;
-  border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); transition: transform .15s; color: #fff;
+  display: block; width: 16px; height: 16px; margin: 3px; border-radius: 50%;
+  border: 2.5px solid #fff; box-shadow: 0 1px 5px rgba(43, 29, 20, .4); transition: transform .15s, box-shadow .15s;
 }
 .pin-cafeteria { background: var(--caramel); }
 .pin-especialidad { background: var(--espresso); }
-.pin:hover { transform: scale(1.15); }
-.pin.is-selected { transform: scale(1.35); box-shadow: 0 0 0 4px rgba(196, 122, 61, .45), 0 3px 10px rgba(0, 0, 0, .4); }
+.pin:hover { transform: scale(1.25); }
+.pin.is-selected { transform: scale(1.5); box-shadow: 0 0 0 5px rgba(196, 122, 61, .35), 0 2px 8px rgba(43, 29, 20, .45); }
 .cluster {
-  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--roast); color: #fff; font-weight: 700; border: 3px solid rgba(255, 255, 255, .85);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+  width: 32px; height: 32px; margin: 2px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(196, 122, 61, .92); color: #fff; font-weight: 700; font-size: .82rem;
+  box-shadow: 0 0 0 5px rgba(196, 122, 61, .25), 0 2px 6px rgba(43, 29, 20, .25);
 }
 .pin-tip.leaflet-tooltip {
   background: var(--espresso); color: #fff; border: 0; border-radius: 8px; padding: 5px 10px;
   font-weight: 600; font-size: .8rem; box-shadow: var(--shadow);
 }
 .pin-tip.leaflet-tooltip-top::before { border-top-color: var(--espresso); }
-.map-legend {
-  position: absolute; left: 12px; bottom: 22px; z-index: 500; display: flex; gap: 14px;
-  background: rgba(255, 253, 249, .94); padding: 7px 12px; border-radius: 10px; font-size: .76rem;
-  box-shadow: var(--shadow);
-}
-.pin-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.leaflet-control-attribution { background: rgba(255, 253, 249, .8) !important; font-size: .62rem; backdrop-filter: blur(4px); }
+.leaflet-control-zoom { border: 0 !important; box-shadow: var(--shadow) !important; border-radius: 12px !important; overflow: hidden; }
 .leaflet-control-zoom a { color: var(--roast); }
 
 /* ── Aprende (landing + lecturas) ───────────────────────── */
@@ -370,7 +366,8 @@ a { color: var(--caramel-dark); }
 .pager-name { font-family: var(--font-display); font-size: clamp(1.05rem, 2.6vw, 1.35rem); color: var(--espresso); }
 
 /* ── Cambio de vista en móvil ───────────────────────────── */
-.mobile-switch { display: none; }
+
+.sheet-handle { display: none; }
 
 /* ── Responsive ─────────────────────────────────────────── */
 :root { --sidebar-w: clamp(330px, 32vw, 440px); }
@@ -401,19 +398,29 @@ a { color: var(--caramel-dark); }
   .nav-btn { padding: 7px 12px; font-size: .88rem; }
   .header-badge { display: none; }
 
-  .app-body { display: block; }
-  .app-body .sidebar, .app-body .map-pane { position: absolute; inset: 0; border: 0; }
-  .app-body.mobile-list .map-pane { visibility: hidden; }
-  .app-body.mobile-map .sidebar { display: none; }
-  .map-legend { bottom: calc(78px + env(safe-area-inset-bottom)); }
-
-  .mobile-switch {
-    display: flex; position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1200;
-    background: var(--espresso); border-radius: 999px; padding: 4px; box-shadow: var(--shadow);
+  /* Mapa a pantalla completa con un panel inferior deslizable (lista, filtros y fichas) */
+  .app-body { display: block; overflow: hidden; }
+  .app-body .map-pane { position: absolute; inset: 0; }
+  .app-body .sidebar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 1000; border: 0;
+    border-radius: 20px 20px 0 0; box-shadow: 0 -8px 30px rgba(43, 29, 20, .22);
+    transition: height .28s cubic-bezier(.3, .8, .3, 1);
+    padding-bottom: env(safe-area-inset-bottom);
   }
-  .mobile-switch button { border: 0; background: transparent; color: #d9c9b6; padding: 10px 18px; border-radius: 999px; font-weight: 600; min-height: 40px; }
-  .mobile-switch button.active { background: var(--caramel); color: #fff; }
-  .cafe-list { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .app-body.sheet-peek .sidebar { height: calc(142px + env(safe-area-inset-bottom)); overflow: hidden; }
+  .app-body.sheet-half .sidebar { height: 52%; }
+  .app-body.sheet-full .sidebar { height: calc(100% - 10px); }
+  .sheet-handle {
+    display: grid; place-items: center; flex: none; width: 100%; height: 26px; border: 0; background: var(--paper);
+    border-radius: 20px 20px 0 0; touch-action: none; position: sticky; top: 0; z-index: 3;
+  }
+  .sheet-handle span { width: 42px; height: 5px; border-radius: 999px; background: #d3c5b2; }
+  .map-pane .leaflet-bottom { bottom: 0; }
+  .app-body.sheet-peek .leaflet-control-zoom { margin-bottom: calc(150px + env(safe-area-inset-bottom)); }
+  .app-body:not(.sheet-peek) .leaflet-control-zoom { display: none; }
+  .app-body.sheet-peek .leaflet-control-attribution { margin-bottom: calc(142px + env(safe-area-inset-bottom)); }
+  .app-body:not(.sheet-peek) .leaflet-control-attribution { display: none; }
+  .cafe-list { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 
   /* 16 px evita que iOS haga zoom al enfocar un campo */
   .search-input, .select { font-size: 16px; }
@@ -452,7 +459,6 @@ a { color: var(--caramel-dark); }
 /* Teléfono en horizontal: poca altura */
 @media (max-height: 480px) and (orientation: landscape) {
   :root { --header-h: 46px; }
-  .mobile-switch { bottom: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
