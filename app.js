@@ -199,10 +199,10 @@ function getStatus(schedule) {
 // ── Marcadores ───────────────────────────────────────────────
 function createMarkerIcon(cafe, selected) {
   return L.divIcon({
-    html: `<span class="pin pin-${cafe.type}${selected ? ' is-selected' : ''}" aria-hidden="true"></span>`,
+    html: `<span class="pin pin-${cafe.type}${selected ? ' is-selected' : ''}" aria-hidden="true">${CUP_SVG}</span>`,
     className: 'pin-wrap',
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
   });
 }
 
@@ -211,7 +211,7 @@ function clusterIcon(cluster) {
   return L.divIcon({
     html: `<span class="cluster">${n}</span>`,
     className: 'cluster-wrap',
-    iconSize: [36, 36],
+    iconSize: [40, 40],
   });
 }
 
@@ -243,7 +243,7 @@ const App = {
 
     <!-- ═════════ MAPA ═════════ -->
     <div v-show="view === 'map'" class="app-body" :class="'sheet-' + sheet">
-      <aside class="sidebar" aria-label="Cafeterías">
+      <aside class="sidebar" ref="sidebarEl" aria-label="Cafeterías">
         <button class="sheet-handle" type="button" :aria-label="sheet === 'peek' ? 'Ver la lista de cafeterías' : 'Bajar la lista'"
                 @pointerdown="onHandleDown" @pointerup="onHandleUp" @pointercancel="onHandleCancel"><span></span></button>
 
@@ -454,18 +454,6 @@ const App = {
           </ol>
         </section>
 
-        <section class="learn-wrap credits" aria-labelledby="credits-title">
-          <h2 id="credits-title" class="eyebrow eyebrow-dark">Créditos de las imágenes</h2>
-          <p class="credits-intro">Las fotos son de Wikimedia Commons con licencia libre; se recortaron y redimensionaron. Los dibujos son propios.</p>
-          <ul class="credits-list">
-            <li v-for="c in CREDITS" :key="c.id">
-              {{ c.alt }} — {{ c.author }},
-              <a :href="c.licenseUrl" target="_blank" rel="noopener">{{ c.license }}</a>,
-              <a :href="c.source" target="_blank" rel="noopener">fuente</a>
-            </li>
-          </ul>
-        </section>
-
         <section class="learn-close">
           <div class="learn-wrap learn-close-inner">
             <h2 class="learn-close-title">Ahora, a probarlo</h2>
@@ -473,6 +461,19 @@ const App = {
             <button class="btn btn-primary" type="button" @click="view = 'map'">Abrir el mapa</button>
           </div>
         </section>
+        <footer class="learn-wrap credits">
+          <details>
+            <summary>Créditos de las imágenes <span class="credits-count">{{ CREDITS.length }}</span></summary>
+            <p class="credits-intro">Las fotos son de Wikimedia Commons con licencia libre; se recortaron y redimensionaron. Los dibujos son propios.</p>
+            <ul class="credits-list">
+              <li v-for="c in CREDITS" :key="c.id">
+                {{ c.alt }} — {{ c.author }},
+                <a :href="c.licenseUrl" target="_blank" rel="noopener">{{ c.license }}</a>,
+                <a :href="c.source" target="_blank" rel="noopener">fuente</a>
+              </li>
+            </ul>
+          </details>
+        </footer>
       </div>
 
       <!-- Tema -->
@@ -591,6 +592,7 @@ const App = {
     const sheet = ref('peek');        // panel móvil: 'peek' | 'half' | 'full'
     const wikiTab = ref(null);        // null = portada de Aprende; si no, id del tema
     const wikiEl = ref(null);
+    const sidebarEl = ref(null);
 
     const query = ref('');
     const selTypes = ref([]);
@@ -730,7 +732,7 @@ const App = {
     function openTopic(id) {
       view.value = 'wiki';
       wikiTab.value = id;
-      nextTick(() => { if (wikiEl.value) wikiEl.value.scrollTop = 0; });
+      nextTick(() => { if (wikiEl.value) wikiEl.value.scrollTo({ top: 0, behavior: 'instant' }); });
     }
 
     // La URL refleja dónde estás (#aprende, #aprende/historia) para que "atrás" y los enlaces funcionen
@@ -817,7 +819,10 @@ const App = {
       if (own) return own;
       return c.google && c.google.photo ? { ...c.google.photo, google: true } : null;
     });
-    watch(activeId, () => { photoFailed.value = false; });
+    watch(activeId, () => {
+      photoFailed.value = false;
+      nextTick(() => { if (sidebarEl.value) sidebarEl.value.scrollTop = 0; });
+    });
 
     // Mapita fijo de la ficha: sin interacción; el enlace superpuesto abre Google Maps
     let miniMap = null;
@@ -889,8 +894,10 @@ const App = {
     function getMarker(cafe) {
       let entry = markers.get(cafe.id);
       if (!entry) {
-        const marker = L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, cafe.id === activeId.value), title: cafe.name, keyboard: true });
-        marker.bindTooltip(cafe.name, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
+        const marker = L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, cafe.id === activeId.value), keyboard: true });
+        // El nombre va como tooltip propio solo con ratón (en táctil se quedaría pegado) y como etiqueta accesible
+        if (window.matchMedia('(hover: hover)').matches) marker.bindTooltip(cafe.name, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
+        marker.on('add', () => { const el = marker.getElement(); if (el) { el.setAttribute('aria-label', cafe.name); el.setAttribute('role', 'button'); } });
         marker.on('click', () => select(cafe));
         marker.on('mouseover', () => { hoverId.value = cafe.id; });
         marker.on('mouseout', () => { hoverId.value = null; });
@@ -913,7 +920,7 @@ const App = {
       const bounds = (activeFilterCount.value || query.value.trim())
         ? L.latLngBounds(list.map(c => [c.lat, c.lng])).pad(0.2)
         : ZONE_BOUNDS;
-      map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6, paddingBottomRight: isMobile() ? [0, 150] : [0, 0] });
+      map.value.flyToBounds(bounds, { maxZoom: 16, duration: 0.6, paddingBottomRight: isMobile() ? [0, 140] : [0, 0] });
     }
 
     watch(filteredCafes, syncMarkers, { flush: 'post' });
@@ -929,7 +936,7 @@ const App = {
         const m = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 10, maxZoom: 19 });
         L.control.attribution({ prefix: false }).addTo(m);
         L.control.zoom({ position: 'bottomright' }).addTo(m);
-        m.fitBounds(ZONE_BOUNDS, { paddingBottomRight: isMobile() ? [0, 150] : [0, 0] });
+        m.fitBounds(ZONE_BOUNDS, { paddingBottomRight: isMobile() ? [0, 140] : [0, 0] });
         map.value = m;
 
         addBaseLayer(m);
@@ -963,7 +970,7 @@ const App = {
       METHOD_OPTIONS: methodOptions, SNACK_OPTIONS: snackOptions, HOOD_OPTIONS: hoodOptions,
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
-      LEARN_TOPICS, wikiEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
+      LEARN_TOPICS, wikiEl, sidebarEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
       cafePhoto, photoFailed, mapsUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
       topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
       METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,
