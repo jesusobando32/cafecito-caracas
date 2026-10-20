@@ -12,6 +12,7 @@ Scripts para `playwright-cli run-code`. Cada uno devuelve un JSON con `errors`, 
 | `sin-red.js` | Overpass y mapa base bloqueados: la app debe seguir usable con los datos guardados |
 | `enlaces-maps.js` | Para los 53 locales: enlaces a Google Maps con SUS coordenadas y todas dentro de Caracas |
 | `google-maps-real.js` | MANUAL: abre Google Maps real y comprueba que el mapa queda a pocos metros del local |
+| `busqueda-en-vivo.js` | Simula Overpass: locales nuevos sin duplicar, gana el primer servidor que responde, arranca sola en móvil |
 | `xss-nombres.js` | Un nombre malicioso de OSM NO debe ejecutar código (`pwned` debe ser `false`) |
 
 ## Cómo correrlos
@@ -29,3 +30,5 @@ Otros navegadores: `playwright-cli -s=<nombre> open <url> --browser=msedge|webki
 Visual: `tests/visual/`. Rendimiento: `tests/perf/`.
 
 Nota: axe puede dar una falsa alarma de contraste en `.cluster` si el grupo de pines está a mitad de animación; repite la prueba.
+
+Importante: `sin-red.js` y `busqueda-en-vivo.js` registran reglas de red que persisten en la sesión de Playwright; ambos las quitan al terminar. Si una prueba se corta a medias, cierra la sesión (`playwright-cli -s=<nombre> close`).

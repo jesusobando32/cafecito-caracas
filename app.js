@@ -151,38 +151,55 @@ const OVERPASS_URLS = [
   'https://overpass.private.coffee/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ];
-const OVERPASS_ATTEMPT_MS = 15000;   // por servidor; si no responde, se prueba el siguiente
+const OVERPASS_ATTEMPT_MS = 20000;   // tiempo máximo por servidor
+const OVERPASS_STAGGER_MS = 2500;    // cada servidor de respaldo arranca si el anterior aún no ha respondido; gana el primero
 const LIVE_CACHE_KEY = 'cafecito-live-v1';
 const LIVE_CACHE_MAX_AGE = 7 * 24 * 3600 * 1000;
-const LIVE_MAX_SPAN = 0.4;   // grados; evita pedir áreas enormes a Overpass
+const LIVE_MAX_SPAN = 0.4;   // grados; si la vista es más grande se pide solo esta zona alrededor del centro
+const LIVE_SKIP_SPAN = 0.9;  // por encima de esto el mapa está demasiado alejado y no se busca
 const LIVE_TIMEOUT_MS = 30000;
 const CURATED_OSM = new Set(CAFES_DATA.map(c => c.osm).filter(Boolean));
 
 async function fetchOverpassCafes(bounds, signal) {
   const bb = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
   const data = `[out:json][timeout:25];(node["amenity"="cafe"](${bb});way["amenity"="cafe"](${bb}););out center tags;`;
-  let lastErr;
-  for (const url of OVERPASS_URLS) {
-    const attempt = new AbortController();
-    const onAbort = () => attempt.abort();
-    signal.addEventListener('abort', onAbort);
+  const attempts = [];   // controladores de los intentos en curso (se cancelan al ganar uno)
+  const abortError = () => Object.assign(new Error('Búsqueda cancelada'), { name: 'AbortError' });
+
+  const tryServer = async (url, delay) => {
+    if (delay) {
+      await new Promise((resolve, reject) => {
+        const t = setTimeout(resolve, delay);
+        signal.addEventListener('abort', () => { clearTimeout(t); reject(abortError()); }, { once: true });
+      });
+    }
+    if (signal.aborted) throw abortError();
+    const ctrl = new AbortController();
+    attempts.push(ctrl);
+    const onAbort = () => ctrl.abort();
+    signal.addEventListener('abort', onAbort, { once: true });
     const timer = setTimeout(onAbort, OVERPASS_ATTEMPT_MS);
     try {
-      const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data }), signal: attempt.signal });
+      const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data }), signal: ctrl.signal });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
       // Overpass responde 200 con "remark" y sin elementos cuando se queda sin tiempo o memoria
       if (json.remark && !(json.elements && json.elements.length)) throw new Error(json.remark);
       return json.elements || [];
-    } catch (err) {
-      if (signal.aborted) throw err;
-      lastErr = err;
     } finally {
       clearTimeout(timer);
       signal.removeEventListener('abort', onAbort);
     }
+  };
+
+  try {
+    return await Promise.any(OVERPASS_URLS.map((url, i) => tryServer(url, i * OVERPASS_STAGGER_MS)));
+  } catch (err) {
+    if (signal.aborted) throw abortError();
+    throw (err.errors && err.errors[0]) || err;
+  } finally {
+    attempts.forEach(c => c.abort());
   }
-  throw lastErr;
 }
 
 function liveToCafe(el) {
@@ -713,11 +730,16 @@ const App = {
     async function loadLive({ force = false } = {}) {
       const m = map.value;
       if (!m) return;
-      const view = m.getBounds();
-      if (view.getNorth() - view.getSouth() > LIVE_MAX_SPAN || view.getEast() - view.getWest() > LIVE_MAX_SPAN) {
+      const bounds = m.getBounds();
+      const spanLat = bounds.getNorth() - bounds.getSouth(), spanLng = bounds.getEast() - bounds.getWest();
+      if (spanLat > LIVE_SKIP_SPAN || spanLng > LIVE_SKIP_SPAN) {
         liveState.value = liveUpdated.value ? 'ok' : 'zoom';
         return;
       }
+      // Pantallas altas (móvil) abarcan más de lo que conviene pedir de una vez: se limita a una zona centrada en el mapa
+      const view = (spanLat > LIVE_MAX_SPAN || spanLng > LIVE_MAX_SPAN)
+        ? L.latLng(m.getCenter()).toBounds(LIVE_MAX_SPAN * 111000)
+        : bounds;
       if (!force && fetchedAreas.some(a => a.contains(view))) { liveState.value = 'ok'; return; }
 
       if (liveAbort) liveAbort.abort();
