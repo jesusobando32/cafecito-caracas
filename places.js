@@ -68,12 +68,17 @@ function parseOsmHours(oh) {
 }
 
 // ── Google Places (API "Places API (New)") ───────────────────
-const GOOGLE_KEY = (window.CAFECITO_CONFIG && window.CAFECITO_CONFIG.googlePlacesKey) || '';
-const GOOGLE_ENABLED = Boolean(GOOGLE_KEY);
-// Ojo: pedir horario, valoración o fotos sube la tarifa de la consulta (SKU "Enterprise"); por eso solo se hace al abrir una ficha.
-const GOOGLE_FIELDS = 'places.location,places.regularOpeningHours,places.rating,places.userRatingCount,places.googleMapsUri,places.nationalPhoneNumber,places.websiteUri,places.photos';
+const GOOGLE_CONFIG = window.CAFECITO_CONFIG || {};
+const GOOGLE_KEY = GOOGLE_CONFIG.googlePlacesKey || '';
+let GOOGLE_ENABLED = Boolean(GOOGLE_KEY);   // se apaga solo si Google rechaza la clave, para no repetir llamadas fallidas
+// Foto + enlace (plan "Pro") y, si googlePlacesDetails no es false, también horario, valoración, web y teléfono (plan "Enterprise", más caro).
+// Se pide solo al abrir una ficha. La tarifa de la consulta es la del campo más caro que incluya.
+const GOOGLE_FIELDS = ['places.displayName', 'places.location', 'places.googleMapsUri', 'places.photos']
+  .concat(GOOGLE_CONFIG.googlePlacesDetails === false ? [] : ['places.regularOpeningHours', 'places.rating', 'places.userRatingCount', 'places.websiteUri', 'places.nationalPhoneNumber'])
+  .join(',');
 const GOOGLE_MATCH_METERS = 150;
-const googleCache = new Map();   // id -> datos | null (por sesión; evita repetir llamadas de pago)
+const GOOGLE_CACHE_MS = 30 * 60 * 1000;   // Google no permite guardar nombres de foto: solo se reutilizan un rato dentro de la sesión
+const googleCache = new Map();   // id -> { t, data }
 
 // Los enlaces que devuelve Google se usan en href: solo se aceptan http(s) (descarta javascript: y similares)
 const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u)) ? u : null;
@@ -110,6 +115,28 @@ function googlePhoto(p) {
   };
 }
 
+// Un lugar de Google solo se acepta si su nombre se parece al del local (una foto equivocada es peor que el dibujo).
+const GENERIC_WORDS = new Set(['cafe', 'cafeteria', 'coffee', 'caracas', 'de', 'la', 'el', 'los', 'las', 'del', 'y', 'the', 'and', 'shop', 'deli']);
+const nameTokens = (n) => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .split(/[^a-z0-9]+/).filter(t => t.length > 1 && !GENERIC_WORDS.has(t));
+function editDistance(a, b) {
+  const row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]; row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return row[b.length];
+}
+function namesMatch(mine, theirs) {
+  const a = nameTokens(mine), b = nameTokens(theirs);
+  if (!a.length || !b.length) return false;   // nombres solo genéricos («Café»): no hay base para asegurar que sea el mismo
+  return a.some(x => b.some(y => x === y || (Math.min(x.length, y.length) >= 4 && editDistance(x, y) <= 1)));
+}
+
 function distanceMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000, rad = Math.PI / 180;
   const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
@@ -117,23 +144,32 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-// Devuelve { schedule, rating, ratingCount, mapsUri, phone, website } o null si no hay coincidencia.
+// Devuelve { schedule, rating, ratingCount, mapsUri, phone, website, photo } o null si Google no tiene ese local (cerca y con nombre parecido).
 async function enrichFromGoogle(cafe) {
   if (!GOOGLE_ENABLED) return null;
-  if (googleCache.has(cafe.id)) return googleCache.get(cafe.id);
+  const cached = googleCache.get(cafe.id);
+  if (cached && Date.now() - cached.t < GOOGLE_CACHE_MS) return cached.data;
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_KEY, 'X-Goog-FieldMask': GOOGLE_FIELDS },
     body: JSON.stringify({
       textQuery: `${cafe.name} Caracas`,
       languageCode: 'es',
-      maxResultCount: 5,
+      regionCode: 'VE',
+      pageSize: 5,
       locationBias: { circle: { center: { latitude: cafe.lat, longitude: cafe.lng }, radius: 200 } },
     }),
   });
-  if (!res.ok) throw new Error('Google Places HTTP ' + res.status);
+  if (!res.ok) {
+    if (res.status === 400 || res.status === 403) {
+      GOOGLE_ENABLED = false;
+      console.error(`[Cafecito] Google Places respondió ${res.status}: revisa la clave en config.js (API activada, facturación y restricción de dominio). Se desactiva en esta sesión.`);
+    }
+    throw new Error('Google Places HTTP ' + res.status);
+  }
   const places = (await res.json()).places || [];
   const near = places
+    .filter(p => p.location && namesMatch(cafe.name, p.displayName && p.displayName.text))
     .map(p => ({ p, d: distanceMeters(cafe.lat, cafe.lng, p.location.latitude, p.location.longitude) }))
     .filter(x => x.d <= GOOGLE_MATCH_METERS)
     .sort((a, b) => a.d - b.d)[0];
@@ -146,6 +182,6 @@ async function enrichFromGoogle(cafe) {
     website: safeUrl(near.p.websiteUri),
     photo: googlePhoto(near.p.photos && near.p.photos[0]),
   } : null;
-  googleCache.set(cafe.id, out);
+  googleCache.set(cafe.id, { t: Date.now(), data: out });
   return out;
 }

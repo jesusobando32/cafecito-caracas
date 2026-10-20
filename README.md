@@ -30,10 +30,26 @@ Al abrir el mapa y al moverlo, la app consulta la **Overpass API** de OpenStreet
 
 Los horarios simples (`opening_hours`) de los locales en vivo se convierten en el momento. La última búsqueda se guarda en el navegador para que la lista aparezca al instante.
 
-### Google Maps (opcional)
-Google no permite leer Maps directamente; hay que usar su API oficial (Places API New), que requiere clave y facturación (hay crédito mensual gratuito). Pon la clave en `config.js` (`googlePlacesKey`) y, al abrir la ficha de un local, la app buscará ese lugar en Google (a menos de 150 m) y mostrará **foto, horario, valoración y sitio web** (la foto lleva la atribución que exige Google; esta parte no está probada con una clave real). Sin clave, la ficha muestra una cafetería ilustrada en vez de foto y un botón «Ver horario en Google Maps».
+### Fotos, horario y valoración desde Google Maps (opcional)
+Google no permite copiar fotos de sus páginas (tienen autor y derechos), pero su API oficial **Places (New)** sí las entrega con permiso y atribución. La app ya está conectada: solo falta la clave.
 
-**Fotos propias:** guarda la imagen en `img/cafes/` y regístrala en `data/photos.js` con el id de OSM del local; tiene prioridad sobre la de Google. En Wikimedia Commons no hay fotos libres de estos locales. La clave queda visible en el navegador: restríngela por referrer HTTP (tu dominio de GitHub Pages y `localhost`) y solo a *Places API (New)*.
+**Cómo activarla**
+1. En [Google Cloud Console](https://console.cloud.google.com/) crea un proyecto (p. ej. «cafecito-caracas») y vincula una cuenta de facturación (pide tarjeta; Google da un uso gratuito mensual por plan, revisa las cifras vigentes en su página de precios).
+2. *APIs y servicios → Biblioteca* → activa **Places API (New)**.
+3. *APIs y servicios → Credenciales → Crear credenciales → Clave de API*, y **restríngela**:
+   - *Restricciones de aplicación → Sitios web*: `https://jesusobando32.github.io/*` y `http://localhost:8765/*`
+   - *Restricciones de API*: solo **Places API (New)**
+4. *Cuotas*: pon un límite diario bajo a Places API (New) (p. ej. 300 solicitudes/día) y crea una alerta de presupuesto, para que un abuso no genere cargos.
+5. Pega la clave en `config.js` (`googlePlacesKey: 'AIza…'`), haz commit y push. La clave queda visible en el navegador (es normal en un sitio estático; por eso se restringe por dominio). GitHub puede avisarte por correo de una «clave expuesta»: con las restricciones puestas es esperado.
+
+**Qué hace**
+- Al abrir una ficha busca el local en Google (nombre + «Caracas», sesgo de 200 m) y solo lo acepta si está a menos de 150 m **y su nombre se parece** (si no, se queda el dibujo: una foto equivocada es peor que ninguna).
+- Muestra la foto con la atribución de su autor (obligatoria), y con `googlePlacesDetails: true` también horario, valoración, web y teléfono. Con `false` pide solo foto y enlace (plan Pro, más barato).
+- Una foto propia en `data/photos.js` tiene prioridad. Si la imagen o la clave fallan, vuelve al dibujo; ante un 400/403 deja un aviso en la consola y no sigue llamando.
+- Los nombres de foto no se guardan (Google lo prohíbe): solo se reutilizan 30 min dentro de la sesión.
+- Probado con respuestas simuladas (`tests/e2e/google-places-simulado.js`); falta probarlo con una clave real.
+
+**Fotos propias:** guarda la imagen en `img/cafes/` y regístrala en `data/photos.js` con el id de OSM del local; tiene prioridad sobre la de Google. En Wikimedia Commons no hay fotos libres de estos locales.
 
 ## Imágenes de la Guía
 Las fotos son de Wikimedia Commons con licencia libre (CC0, CC BY o CC BY-SA); se recortaron y redimensionaron. Cada foto muestra su autor y licencia, y la portada de la Guía lista todos los créditos (salen de `data/images.js`). Los dibujos SVG son propios. Sin foto libre: guayoyo (método) y marrón (bebida), que solo tienen dibujo.

@@ -319,7 +319,7 @@ const App = {
           <button class="detail-back" @click="closeDetail" type="button">← Volver a la lista</button>
 
           <figure class="cafe-photo">
-            <img v-if="cafePhoto" width="800" height="500" :src="cafePhoto.src" :alt="'Foto de ' + activeCafe.name" loading="lazy" decoding="async" referrerpolicy="no-referrer" @error="photoFailed = true" />
+            <img v-if="cafePhoto" width="800" height="500" :src="cafePhoto.src" :alt="'Foto de ' + activeCafe.name" loading="lazy" decoding="async" @error="photoFailed = true" />
             <div v-else class="cafe-photo-fallback" :class="'type-' + activeCafe.type" v-html="CAFE_FALLBACK_SVG" role="img" aria-label="Ilustración de una cafetería: este local aún no tiene foto"></div>
             <figcaption v-if="cafePhoto && cafePhoto.author">
               Foto: <a v-if="cafePhoto.authorUrl" :href="cafePhoto.authorUrl" target="_blank" rel="noopener">{{ cafePhoto.author }}</a><template v-else>{{ cafePhoto.author }}</template>
