@@ -34,6 +34,9 @@ function scheduleFromByDay(byDay) {
   });
 }
 
+// Abierto las 24 h, los 7 días ("24/7" en OSM; un único periodo sin cierre en Google)
+const ALL_DAYS_24H = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, [['00:00', '24:00']]]));
+
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 
 // Un tramo "18:00-02:00" cruza la medianoche: el cierre pasa a 26:00. Más de 16 h abierto se considera dato dudoso.
@@ -49,7 +52,7 @@ function normalizeRange(o, c) {
 // Patrones simples ("Mo-Fr 08:00-18:00; Sa 09:00-12:00,14:00-18:00"); lo ambiguo devuelve null (sin horario).
 function parseOsmHours(oh) {
   if (!oh) return null;
-  if (oh.trim() === '24/7') return scheduleFromByDay(Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, [['00:00', '24:00']]])));
+  if (oh.trim() === '24/7') return scheduleFromByDay(ALL_DAYS_24H);
   const byDay = {};
   for (const rule of oh.split(';').map(r => r.trim()).filter(Boolean)) {
     if (/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/.test(rule) || rule.endsWith('off')) continue;
@@ -72,13 +75,16 @@ const GOOGLE_FIELDS = 'places.location,places.regularOpeningHours,places.rating,
 const GOOGLE_MATCH_METERS = 150;
 const googleCache = new Map();   // id -> datos | null (por sesión; evita repetir llamadas de pago)
 
+// Los enlaces que devuelve Google se usan en href: solo se aceptan http(s) (descarta javascript: y similares)
+const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u)) ? u : null;
+
 const pad2 = (n) => String(n).padStart(2, '0');
 
 function scheduleFromGoogle(periods) {
   if (!periods || !periods.length) return null;
   // Abierto 24 h: un único periodo sin cierre
   if (periods.length === 1 && !periods[0].close) {
-    return scheduleFromByDay(Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, [['00:00', '24:00']]])));
+    return scheduleFromByDay(ALL_DAYS_24H);
   }
   const byDay = {};
   for (const p of periods) {
@@ -100,7 +106,7 @@ function googlePhoto(p) {
   return {
     src: `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=900&maxHeightPx=600&key=${encodeURIComponent(GOOGLE_KEY)}`,
     author: a ? a.displayName : 'Google Maps',
-    authorUrl: a ? a.uri : null,
+    authorUrl: a ? safeUrl(a.uri) : null,
   };
 }
 
@@ -135,9 +141,9 @@ async function enrichFromGoogle(cafe) {
     schedule: scheduleFromGoogle(near.p.regularOpeningHours && near.p.regularOpeningHours.periods),
     rating: near.p.rating || null,
     ratingCount: near.p.userRatingCount || 0,
-    mapsUri: near.p.googleMapsUri || null,
+    mapsUri: safeUrl(near.p.googleMapsUri),
     phone: near.p.nationalPhoneNumber || null,
-    website: near.p.websiteUri || null,
+    website: safeUrl(near.p.websiteUri),
     photo: googlePhoto(near.p.photos && near.p.photos[0]),
   } : null;
   googleCache.set(cafe.id, out);

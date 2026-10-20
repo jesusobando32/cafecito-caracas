@@ -1,0 +1,24 @@
+# Pruebas end-to-end (Playwright CLI)
+
+Scripts para `playwright-cli run-code`. Cada uno devuelve un JSON con `errors`, desbordes, etc.; lo esperado es que
+`errors`, `broken`, `overflow` y las listas de violaciones vengan vacías.
+
+| Script | Qué comprueba |
+|---|---|
+| `audit-escritorio.js` | Mapa, ficha (minimapa y enlace a Google Maps) y las 8 páginas de Aprende: errores de consola, imágenes rotas, desbordes |
+| `audit-movil.js` | Panel inferior (peek/half/full), ficha abierta arriba, arrastre, Aprende y botón atrás |
+| `accesibilidad-axe.js` | axe-core (WCAG 2 A/AA + buenas prácticas) en mapa, ficha y Aprende |
+| `datos-extremos.js` | Nombres larguísimos, unicode/emoji, horarios partidos y cruce de medianoche, lista vacía |
+| `sin-red.js` | Overpass y mapa base bloqueados: la app debe seguir usable con los datos guardados |
+| `xss-nombres.js` | Un nombre malicioso de OSM NO debe ejecutar código (`pwned` debe ser `false`) |
+
+## Cómo correrlos
+```bash
+python -m http.server 8765                              # en la raíz del proyecto
+playwright-cli -s=web open http://localhost:8765/ && playwright-cli -s=web resize 1280 800
+playwright-cli -s=web run-code --filename=tests/e2e/audit-escritorio.js
+playwright-cli -s=mov open http://localhost:8765/ --mobile
+playwright-cli -s=mov run-code --filename=tests/e2e/audit-movil.js
+```
+Ojo: tras cambiar `app.js` cierra y vuelve a abrir la sesión (`playwright-cli -s=web close`), porque el navegador cachea los scripts.
+Los datos de prueba se guardan en `localStorage` del propio navegador de Playwright; no tocan tu navegador.

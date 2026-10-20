@@ -235,14 +235,15 @@ const App = {
         <span class="app-logo-text">Cafecito <em>Caracas</em></span>
       </a>
       <nav class="main-nav" aria-label="Secciones">
-        <button class="nav-btn" :class="{ active: view === 'map' }" @click="view = 'map'" type="button">Mapa</button>
-        <button class="nav-btn" :class="{ active: view === 'wiki' }" @click="openTopic(null)" type="button">Aprende</button>
+        <a class="nav-btn" :class="{ active: view === 'map' }" :aria-current="view === 'map' ? 'page' : null" href="./" @click.prevent="view = 'map'">Mapa</a>
+        <a class="nav-btn" :class="{ active: view === 'wiki' }" :aria-current="view === 'wiki' ? 'page' : null" href="#aprende" @click.prevent="openTopic(null)">Aprende</a>
       </nav>
       <span class="header-badge" aria-live="polite">{{ filteredCafes.length }} de {{ totalCount }}</span>
     </header>
 
     <!-- ═════════ MAPA ═════════ -->
-    <div v-show="view === 'map'" class="app-body" :class="'sheet-' + sheet">
+    <div v-show="view === 'map'" class="app-body" role="main" :class="'sheet-' + sheet">
+      <h1 class="sr-only">Cafecito Caracas: mapa de cafeterías de Caracas</h1>
       <aside class="sidebar" ref="sidebarEl" aria-label="Cafeterías">
         <button class="sheet-handle" type="button" :aria-label="sheet === 'peek' ? 'Ver la lista de cafeterías' : 'Bajar la lista'"
                 @pointerdown="onHandleDown" @pointerup="onHandleUp" @pointercancel="onHandleCancel"><span></span></button>
@@ -252,7 +253,7 @@ const App = {
           <button class="detail-back" @click="closeDetail" type="button">← Volver a la lista</button>
 
           <figure class="cafe-photo">
-            <img v-if="cafePhoto" :src="cafePhoto.src" :alt="'Foto de ' + activeCafe.name" loading="lazy" decoding="async" referrerpolicy="no-referrer" @error="photoFailed = true" />
+            <img v-if="cafePhoto" width="800" height="500" :src="cafePhoto.src" :alt="'Foto de ' + activeCafe.name" loading="lazy" decoding="async" referrerpolicy="no-referrer" @error="photoFailed = true" />
             <div v-else class="cafe-photo-fallback" :class="'type-' + activeCafe.type" v-html="CAFE_FALLBACK_SVG" role="img" aria-label="Ilustración de una cafetería: este local aún no tiene foto"></div>
             <figcaption v-if="cafePhoto && cafePhoto.author">
               Foto: <a v-if="cafePhoto.authorUrl" :href="cafePhoto.authorUrl" target="_blank" rel="noopener">{{ cafePhoto.author }}</a><template v-else>{{ cafePhoto.author }}</template>
@@ -263,7 +264,7 @@ const App = {
           <header class="detail-head">
             <span class="type-chip" :class="'type-' + activeCafe.type">{{ TYPE_INFO[activeCafe.type].label }}</span>
             <span v-if="!activeCafe.typeConfirmed" class="tag tag-muted" title="La categoría aún no tiene fuente">por confirmar</span>
-            <h1 class="detail-name">{{ activeCafe.name }}</h1>
+            <h2 class="detail-name">{{ activeCafe.name }}</h2>
             <div class="status" :class="'status-' + activeStatus.state"><span class="status-dot"></span>{{ activeStatus.text }}</div>
             <p v-if="activeCafe.google && activeCafe.google.rating" class="detail-rating">⭐ {{ activeCafe.google.rating.toFixed(1) }} <span class="muted">({{ activeCafe.google.ratingCount }} reseñas en Google)</span></p>
             <p v-if="googleLoading" class="muted">Consultando Google Maps…</p>
@@ -415,7 +416,7 @@ const App = {
     </div>
 
     <!-- ═════════ APRENDE ═════════ -->
-    <div v-show="view === 'wiki'" class="wiki-page" ref="wikiEl">
+    <div v-show="view === 'wiki'" class="wiki-page" role="main" ref="wikiEl">
 
       <!-- Portada: landing de Aprende -->
       <div v-if="!topic" class="learn">
@@ -427,7 +428,7 @@ const App = {
               <p class="learn-intro">Siete lecturas cortas para entender de dónde viene el café, qué significa «de especialidad» y qué pedir la próxima vez que estés frente a la barra.</p>
               <div class="learn-actions">
                 <button class="btn btn-primary" type="button" @click="openTopic(LEARN_TOPICS[0].id)">Empezar por la historia</button>
-                <button class="btn btn-ghost" type="button" @click="view = 'map'">Ver cafeterías en el mapa</button>
+                <a class="btn btn-ghost" href="./" @click.prevent="view = 'map'">Ver cafeterías en el mapa</a>
               </div>
             </div>
             <svg class="learn-art" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -458,10 +459,10 @@ const App = {
           <div class="learn-wrap learn-close-inner">
             <h2 class="learn-close-title">Ahora, a probarlo</h2>
             <p>Con lo que sabes, el mapa se lee distinto: filtra por método, busca un V60 o un buen espresso.</p>
-            <button class="btn btn-primary" type="button" @click="view = 'map'">Abrir el mapa</button>
+            <a class="btn btn-primary" href="./" @click.prevent="view = 'map'">Abrir el mapa</a>
           </div>
         </section>
-        <footer class="learn-wrap credits">
+        <div class="learn-wrap credits">
           <details>
             <summary>Créditos de las imágenes <span class="credits-count">{{ CREDITS.length }}</span></summary>
             <p class="credits-intro">Las fotos son de Wikimedia Commons con licencia libre; se recortaron y redimensionaron. Los dibujos son propios.</p>
@@ -473,22 +474,22 @@ const App = {
               </li>
             </ul>
           </details>
-        </footer>
+        </div>
       </div>
 
       <!-- Tema -->
       <div v-else class="learn">
-        <header class="topic-hero">
+        <div class="topic-hero">
           <div class="learn-wrap topic-hero-grid" :class="{ 'has-img': topicHero }">
             <div>
-              <button class="crumb" type="button" @click="openTopic(null)">← Aprende</button>
+              <a class="crumb" href="#aprende" @click.prevent="openTopic(null)">← Aprende</a>
               <p class="eyebrow">Lectura {{ topic.num }} de {{ LEARN_TOPICS.length }}</p>
               <h1 class="learn-title topic-title">{{ topic.title }}</h1>
               <p class="learn-intro">{{ topic.lead }}</p>
             </div>
             <a-fig v-if="topicHero" :id="topicHero" sizes="(max-width: 860px) 92vw, 480px" eager dark />
           </div>
-        </header>
+        </div>
 
         <div class="learn-wrap topic-layout">
           <aside v-if="topicToc.length > 1" class="toc" aria-label="En esta página">
@@ -500,7 +501,7 @@ const App = {
             </ul>
           </aside>
 
-          <main class="topic-main">
+          <div class="topic-main">
             <!-- Artículo en secciones -->
             <div v-if="topic.kind === 'article'" class="prose">
               <section v-for="(sec, i) in topicArticle.sections" :key="sec.subtitle" :id="'sec-' + i" class="prose-sec">
@@ -564,7 +565,7 @@ const App = {
                 <dd class="row-body">{{ g.text }}</dd>
               </div>
             </dl>
-          </main>
+          </div>
         </div>
 
         <nav class="learn-wrap pager" aria-label="Otras lecturas">
@@ -574,9 +575,9 @@ const App = {
           <a v-if="nextTopic" class="pager-link pager-next" :href="'#aprende/' + nextTopic.id" @click.prevent="openTopic(nextTopic.id)">
             <span class="pager-dir">Siguiente →</span><span class="pager-name">{{ nextTopic.title }}</span>
           </a>
-          <button v-else class="pager-link pager-next" type="button" @click="view = 'map'">
+          <a v-else class="pager-link pager-next" href="./" @click.prevent="view = 'map'">
             <span class="pager-dir">Para terminar →</span><span class="pager-name">Abrir el mapa de cafeterías</span>
-          </button>
+          </a>
         </nav>
       </div>
     </div>
@@ -896,7 +897,12 @@ const App = {
       if (!entry) {
         const marker = L.marker([cafe.lat, cafe.lng], { icon: createMarkerIcon(cafe, cafe.id === activeId.value), keyboard: true });
         // El nombre va como tooltip propio solo con ratón (en táctil se quedaría pegado) y como etiqueta accesible
-        if (window.matchMedia('(hover: hover)').matches) marker.bindTooltip(cafe.name, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
+        if (window.matchMedia('(hover: hover)').matches) {
+          // Leaflet interpreta un string como HTML y el nombre puede venir de OpenStreetMap (editable por cualquiera): se pasa como nodo de texto
+          const tip = document.createElement('span');
+          tip.textContent = cafe.name;
+          marker.bindTooltip(tip, { direction: 'top', offset: [0, -16], className: 'pin-tip' });
+        }
         marker.on('add', () => { const el = marker.getElement(); if (el) { el.setAttribute('aria-label', cafe.name); el.setAttribute('role', 'button'); } });
         marker.on('click', () => select(cafe));
         marker.on('mouseover', () => { hoverId.value = cafe.id; });
