@@ -325,6 +325,7 @@ const App = {
             <figcaption v-if="cafePhoto && cafePhoto.author">
               Foto: <a v-if="cafePhoto.authorUrl" :href="cafePhoto.authorUrl" target="_blank" rel="noopener">{{ cafePhoto.author }}</a><template v-else>{{ cafePhoto.author }}</template>
               <template v-if="cafePhoto.google"> · Google Maps</template>
+              <template v-if="cafePhoto.note"> · {{ cafePhoto.note }}</template>
             </figcaption>
           </figure>
 

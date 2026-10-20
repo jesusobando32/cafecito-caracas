@@ -34,7 +34,8 @@ Los horarios simples (`opening_hours`) de los locales en vivo se convierten en e
 ### Fotos sin tarjeta
 - **No se copian fotos de Instagram ni de Google Maps:** son de sus autores (el local o sus clientes), sus términos prohíben la descarga automática y publicarlas sin permiso infringe los derechos de autor.
 - **Botón «Instagram del local» y «Sitio web»** en la ficha, con los enlaces oficiales que los colaboradores de OpenStreetMap ya registraron (`data/links.js`, generado con `python -X utf8 scripts/build_links.py`; hoy 38 locales con Instagram). Así se ven sus fotos en su propia cuenta.
-- **Fotos con permiso:** pídelas al local (suelen decir que sí) o toma las tuyas y regístralas con
+- **Lote de fotos de fachada autorizadas:** guarda cada foto en `fotos-pendientes/` con el nombre del local (ver `fotos-pendientes/LEEME.md`), mira cuáles faltan con `python -X utf8 scripts/add_photos_batch.py --list` y procésalas con `python -X utf8 scripts/add_photos_batch.py`. El crédito sale solo («Foto: @cuenta · cortesía del local», con enlace a su Instagram). Las originales no se suben a GitHub.
+- **Una foto suelta:** pídelas al local (suelen decir que sí) o toma las tuyas y regístralas con
   `python -X utf8 scripts/add_photo.py <id_osm> foto.jpg --author "Nombre o @cuenta del local" --url https://instagram.com/cuenta`
   (recorta y comprime la imagen y la añade a `data/photos.js`; tiene prioridad sobre cualquier otra fuente).
 - Mensaje para pedirla: *«¡Hola! Tengo un mapa gratuito de cafeterías de Caracas (jesusobando32.github.io/cafecito-caracas) y me encantaría mostrar una foto de su local con el crédito y un enlace a su Instagram. ¿Nos autorizan a usar una foto de su cuenta o nos pueden enviar una?»*

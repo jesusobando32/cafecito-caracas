@@ -15,6 +15,7 @@ Scripts para `playwright-cli run-code`. Cada uno devuelve un JSON con `errors`, 
 | `busqueda-en-vivo.js` | Simula Overpass: locales nuevos sin duplicar, gana el primer servidor que responde, arranca sola en móvil |
 | `google-places-simulado.js` | Simula Google Places: petición correcta, foto con atribución, horario, nombre distinto rechazado, foto rota y clave rechazada |
 | `enlaces-sociales.js` | Botones de Instagram y web: curados y en vivo, descarta `javascript:` y rutas que no son cuentas |
+| `fotos-propias.js` | Foto propia con crédito «@cuenta · cortesía del local» y enlace a su Instagram; archivo roto vuelve al dibujo |
 | `xss-nombres.js` | Un nombre malicioso de OSM NO debe ejecutar código (`pwned` debe ser `false`) |
 
 ## Cómo correrlos
