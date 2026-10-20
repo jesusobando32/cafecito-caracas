@@ -313,6 +313,33 @@ a { color: var(--caramel-dark); }
 .spec dt { font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .spec dd { margin: 2px 0 0; font-weight: 600; }
 
+/* Imágenes de Aprende */
+.fig { margin: 0; }
+.fig img { display: block; width: 100%; height: auto; border-radius: 12px; background: #e8dccb; }
+.fig figcaption { margin-top: 6px; font-size: .7rem; line-height: 1.4; color: var(--muted); }
+.fig figcaption a { color: inherit; }
+.fig-dark figcaption { color: #bfae9a; }
+.topic-hero-grid.has-img { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(20px, 5vw, 56px); align-items: center; }
+.topic-hero-grid.has-img .fig img { aspect-ratio: 16 / 9; object-fit: cover; box-shadow: 0 14px 40px rgba(0, 0, 0, .35); }
+.sec-fig { margin-top: 18px; max-width: 640px; }
+.sec-fig img { max-height: 420px; object-fit: cover; }
+.row-media { display: grid; grid-template-columns: repeat(2, minmax(0, 280px)); gap: 14px; margin-top: 18px; align-items: start; }
+.row-media .fig img { aspect-ratio: 1; object-fit: cover; }
+.diagram { margin: 0; }
+.diagram-art { aspect-ratio: 1; display: grid; place-items: center; background: var(--crema); border-radius: 12px; padding: 10px; }
+.diagram-art svg { width: 100%; height: auto; max-height: 100%; }
+.diagram figcaption { margin-top: 6px; font-size: .7rem; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.legend-item i { width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(74, 47, 31, .5); }
+
+/* Créditos */
+.credits { padding-block: 0 clamp(36px, 6vw, 64px); }
+.credits-intro { margin: 0 0 12px; color: var(--muted); max-width: 62ch; font-size: .9rem; }
+.credits-list { margin: 0; padding-left: 18px; columns: 2 320px; column-gap: 32px; font-size: .78rem; color: var(--muted); }
+.credits-list li { margin-bottom: 6px; break-inside: avoid; }
+.credits-list a { color: var(--caramel-dark); }
+
 /* Anterior / siguiente */
 .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding-block: 0 clamp(36px, 6vw, 72px); }
 .pager-link {
@@ -381,6 +408,7 @@ a { color: var(--caramel-dark); }
   .learn-hero-grid { grid-template-columns: minmax(0, 1fr) clamp(90px, 22vw, 160px); }
   .row-item { grid-template-columns: minmax(0, 1fr); }
   .row-compact .row-title { font-size: 1.15rem; }
+  .topic-hero-grid.has-img { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Teléfonos */
@@ -396,6 +424,7 @@ a { color: var(--caramel-dark); }
   .sec-num { padding-top: 0; }
   .idx-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
   .idx-lead { display: none; }
+  .row-media { grid-template-columns: minmax(0, 1fr); }
   .pager { grid-template-columns: minmax(0, 1fr); }
   .pager-next, .pager-prev { grid-column: 1; text-align: left; align-items: flex-start; }
 }

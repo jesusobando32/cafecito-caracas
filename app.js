@@ -32,6 +32,41 @@ const LEARN_EXTRA = {
   bebidas:  { title: 'Bebidas', lead: 'Del guayoyo de casa al flat white de especialidad.' },
   glosario: { title: 'Glosario', lead: 'Palabras que verás en las cartas y en las bolsas de café.' },
 };
+// Imágenes de cada lectura (ids de data/images.js). Lo que no tiene foto libre queda solo con dibujo.
+const LEARN_HERO = { historia: 'hero-historia', regiones: 'hero-regiones', especialidad: 'hero-especialidad', tipo: 'hero-tipo' };
+const LEARN_SECTION_IMAGES = { historia: { 2: 'sec-venezuela', 3: 'sec-auge' }, especialidad: { 1: 'sec-cereza', 3: 'sec-tueste' } };
+const METHOD_IMAGES = {
+  'Espresso': 'm-espresso', 'V60': 'm-v60', 'Chemex': 'm-chemex', 'AeroPress': 'm-aeropress',
+  'Prensa francesa': 'm-prensa', 'Moka': 'm-moka', 'Cold Brew': 'm-coldbrew', 'Sifón': 'm-sifon',
+};
+const DRINK_IMAGES = {
+  'Café con leche': 'd-conleche', 'Negrito': 'd-negrito', 'Guayoyo': 'd-guayoyo', 'Cappuccino': 'd-cappuccino',
+  'Latte': 'd-latte', 'Flat white': 'd-flatwhite', 'Americano': 'd-americano',
+};
+const CREDITS = Object.entries(IMAGES).map(([id, img]) => ({ id, ...img }));
+
+// Foto con pie de crédito (autor, licencia y fuente salen de data/images.js)
+const Fig = {
+  props: { id: String, sizes: { type: String, default: '100vw' }, eager: Boolean, dark: Boolean },
+  computed: {
+    img() { return IMAGES[this.id] || null; },
+    srcset() { return this.img.widths.map(w => `${this.img.src}-${w}.jpg ${w}w`).join(', '); },
+    src() { return `${this.img.src}-${this.img.widths[this.img.widths.length - 1]}.jpg`; },
+    width() { return this.img.widths[0]; },
+    height() { return Math.round(this.img.widths[0] / this.img.ratio); },
+  },
+  template: `
+    <figure v-if="img" class="fig" :class="{ 'fig-dark': dark }">
+      <img :src="src" :srcset="srcset" :sizes="sizes" :alt="img.alt" :width="width" :height="height"
+           :loading="eager ? 'eager' : 'lazy'" decoding="async" />
+      <figcaption>
+        Foto: {{ img.author }} ·
+        <a :href="img.licenseUrl" target="_blank" rel="noopener">{{ img.license }}</a> ·
+        <a :href="img.source" target="_blank" rel="noopener">Wikimedia Commons</a>
+      </figcaption>
+    </figure>`,
+};
+
 const LEARN_TOPICS = ['historia', 'regiones', 'especialidad', 'tipo', 'metodos', 'bebidas', 'glosario'].map((id, i) => {
   const article = WIKI_DATA.articles.find(a => a.id === id);
   const base = article ? { title: article.title, lead: article.lead, kind: 'article' } : { ...LEARN_EXTRA[id], kind: id };
@@ -377,6 +412,18 @@ const App = {
           </ol>
         </section>
 
+        <section class="learn-wrap credits" aria-labelledby="credits-title">
+          <h2 id="credits-title" class="eyebrow eyebrow-dark">Créditos de las imágenes</h2>
+          <p class="credits-intro">Las fotos son de Wikimedia Commons con licencia libre; se recortaron y redimensionaron. Los dibujos son propios.</p>
+          <ul class="credits-list">
+            <li v-for="c in CREDITS" :key="c.id">
+              {{ c.alt }} — {{ c.author }},
+              <a :href="c.licenseUrl" target="_blank" rel="noopener">{{ c.license }}</a>,
+              <a :href="c.source" target="_blank" rel="noopener">fuente</a>
+            </li>
+          </ul>
+        </section>
+
         <section class="learn-close">
           <div class="learn-wrap learn-close-inner">
             <h2 class="learn-close-title">Ahora, a probarlo</h2>
@@ -389,11 +436,14 @@ const App = {
       <!-- Tema -->
       <div v-else class="learn">
         <header class="topic-hero">
-          <div class="learn-wrap">
-            <button class="crumb" type="button" @click="openTopic(null)">← Aprende</button>
-            <p class="eyebrow">Lectura {{ topic.num }} de {{ LEARN_TOPICS.length }}</p>
-            <h1 class="learn-title topic-title">{{ topic.title }}</h1>
-            <p class="learn-intro">{{ topic.lead }}</p>
+          <div class="learn-wrap topic-hero-grid" :class="{ 'has-img': topicHero }">
+            <div>
+              <button class="crumb" type="button" @click="openTopic(null)">← Aprende</button>
+              <p class="eyebrow">Lectura {{ topic.num }} de {{ LEARN_TOPICS.length }}</p>
+              <h1 class="learn-title topic-title">{{ topic.title }}</h1>
+              <p class="learn-intro">{{ topic.lead }}</p>
+            </div>
+            <a-fig v-if="topicHero" :id="topicHero" sizes="(max-width: 860px) 92vw, 480px" eager dark />
           </div>
         </header>
 
@@ -415,6 +465,7 @@ const App = {
                 <div>
                   <h2 class="sec-title">{{ sec.subtitle }}</h2>
                   <p>{{ sec.text }}</p>
+                  <a-fig v-if="sectionImage(i)" :id="sectionImage(i)" sizes="(max-width: 860px) 92vw, 640px" class="sec-fig" />
                 </div>
               </section>
             </div>
@@ -423,7 +474,6 @@ const App = {
             <div v-else-if="topic.kind === 'metodos'" class="rows">
               <section v-for="(m, name) in WIKI_DATA.methods" :key="name" :id="'method-' + name" class="row-item">
                 <div class="row-head">
-                  <span class="row-icon" aria-hidden="true">{{ m.icon }}</span>
                   <h2 class="row-title">{{ m.title }}</h2>
                   <p class="row-kicker">{{ m.description }}</p>
                 </div>
@@ -434,6 +484,13 @@ const App = {
                     <div><dt>Tiempo</dt><dd>{{ m.time }}</dd></div>
                     <div><dt>Ratio</dt><dd>{{ m.ratio }}</dd></div>
                   </dl>
+                  <div class="row-media">
+                    <a-fig v-if="METHOD_IMAGES[name]" :id="METHOD_IMAGES[name]" sizes="(max-width: 560px) 92vw, 280px" />
+                    <figure v-if="METHOD_DIAGRAMS[name]" class="diagram">
+                      <div class="diagram-art" v-html="METHOD_DIAGRAMS[name]"></div>
+                      <figcaption>Cómo fluye el agua y el café</figcaption>
+                    </figure>
+                  </div>
                 </div>
               </section>
             </div>
@@ -442,7 +499,18 @@ const App = {
             <div v-else-if="topic.kind === 'bebidas'" class="rows">
               <section v-for="d in WIKI_DATA.drinks" :key="d.name" class="row-item row-compact">
                 <div class="row-head"><h2 class="row-title">{{ d.name }}</h2></div>
-                <div class="row-body"><p>{{ d.text }}</p></div>
+                <div class="row-body">
+                  <p>{{ d.text }}</p>
+                  <div class="row-media">
+                    <a-fig v-if="DRINK_IMAGES[d.name]" :id="DRINK_IMAGES[d.name]" sizes="(max-width: 560px) 92vw, 280px" />
+                    <figure v-if="drinkSvg(d.name)" class="diagram">
+                      <div class="diagram-art" v-html="drinkSvg(d.name)"></div>
+                      <figcaption class="legend">
+                        <span v-for="l in drinkLegend(d.name)" :key="l.label" class="legend-item"><i :style="{ background: l.color }"></i>{{ l.label }}</span>
+                      </figcaption>
+                    </figure>
+                  </div>
+                </div>
               </section>
             </div>
 
@@ -609,6 +677,9 @@ const App = {
       if (topic.value.kind === 'metodos') return Object.entries(WIKI_DATA.methods).map(([name, m]) => ({ id: 'method-' + name, label: m.title }));
       return [];
     });
+
+    const topicHero = computed(() => (topic.value && LEARN_HERO[topic.value.id]) || null);
+    const sectionImage = (i) => (topic.value && (LEARN_SECTION_IMAGES[topic.value.id] || {})[i]) || null;
 
     function scrollToId(id) {
       const el = document.getElementById(id);
@@ -800,6 +871,8 @@ const App = {
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       LEARN_TOPICS, wikiEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
+      topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
+      METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,
       view, mobileView,
       query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
@@ -810,4 +883,4 @@ const App = {
   },
 };
 
-createApp(App).mount('#app');
+createApp(App).component('AFig', Fig).mount('#app');
