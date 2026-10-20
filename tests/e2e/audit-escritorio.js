@@ -23,13 +23,13 @@ async page => {
   await page.locator('.detail-back').click(); await page.waitForTimeout(400);
   // Aprende
   for (const id of ['', 'historia', 'regiones', 'especialidad', 'tipo', 'metodos', 'bebidas', 'glosario']) {
-    await page.evaluate(h => { location.hash = h; dispatchEvent(new PopStateEvent('popstate')); }, id ? '#aprende/' + id : '#aprende');
+    await page.evaluate(h => { location.hash = h; dispatchEvent(new PopStateEvent('popstate')); }, id ? '#guia/' + id : '#guia');
     await page.waitForTimeout(500);
     await page.evaluate(async () => { const w = document.querySelector('.wiki-page'); for (let y = 0; y < w.scrollHeight; y += 700) { w.scrollTop = y; await new Promise(r => setTimeout(r, 60)); } });
-    await check('aprende/' + id);
+    await check('guia/' + id);
   }
   await page.evaluate(() => { const w = document.querySelector('.wiki-page'); w.scrollTop = 0; });
-  await page.evaluate(() => { location.hash = '#aprende'; dispatchEvent(new PopStateEvent('popstate')); });
+  await page.evaluate(() => { location.hash = '#guia'; dispatchEvent(new PopStateEvent('popstate')); });
   await page.waitForTimeout(400);
   const det = page.locator('.credits details'); out.notes.push('créditos abiertos por defecto: ' + await det.evaluate(d => d.open));
   await page.evaluate(() => { const w = document.querySelector('.wiki-page'); w.scrollTop = w.scrollHeight; }); await page.waitForTimeout(400);

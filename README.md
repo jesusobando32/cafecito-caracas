@@ -1,6 +1,6 @@
 # ☕ Cafecito Caracas
 
-Buscador de cafeterías de Caracas — de Caricuao a Petare, con La Trinidad y El Hatillo — en un mapa limpio, con filtros por **tipo de local** (cafetería / café de especialidad), **método de preparación** y **snacks**, más una sección *Aprende* con guía de café.
+Buscador de cafeterías de Caracas — de Caricuao a Petare, con La Trinidad y El Hatillo — en un mapa limpio, con filtros por **tipo de local** (cafetería / café de especialidad), **método de preparación** y **snacks**, más una **Guía** del café (historia, métodos, bebidas y más).
 
 **Sitio:** https://jesusobando32.github.io/cafecito-caracas/
 
@@ -9,15 +9,15 @@ Sitio 100 % estático (sin build): Vue 3 + Leaflet + leaflet.markercluster por C
 
 ```
 index.html        Estructura y librerías
-app.js            Aplicación Vue (filtros, mapa, detalle, Aprende con rutas #aprende/tema)
+app.js            Aplicación Vue (filtros, mapa, detalle, la Guía con rutas #guia/tema)
 places.js         Horarios OSM y Google Places opcional
 config.js         Clave opcional de Google Places
 data/photos.js    Fotos propias de locales (opcional, por id de OSM)
-data/images.js    Fotos de Aprende (Wikimedia Commons) con autor y licencia
+data/images.js    Fotos de la Guía (Wikimedia Commons) con autor y licencia
 data/illustrations.js  Dibujos SVG: diagramas de métodos, cortes de bebidas, cafetería genérica
 img/aprende/      Fotos recortadas (2 tamaños)
 data/cafes.js     Cafeterías (GENERADO por scripts/build_data.py)
-data/wiki.js      Contenido de la pestaña Aprende
+data/wiki.js      Contenido de la Guía
 styles/main.css   Estilos
 scripts/          Generador de datos desde OpenStreetMap
 tests/validate.js Validación de datos:  node tests/validate.js
@@ -35,8 +35,8 @@ Google no permite leer Maps directamente; hay que usar su API oficial (Places AP
 
 **Fotos propias:** guarda la imagen en `img/cafes/` y regístrala en `data/photos.js` con el id de OSM del local; tiene prioridad sobre la de Google. En Wikimedia Commons no hay fotos libres de estos locales. La clave queda visible en el navegador: restríngela por referrer HTTP (tu dominio de GitHub Pages y `localhost`) y solo a *Places API (New)*.
 
-## Imágenes de Aprende
-Las fotos son de Wikimedia Commons con licencia libre (CC0, CC BY o CC BY-SA); se recortaron y redimensionaron. Cada foto muestra su autor y licencia, y la portada de Aprende lista todos los créditos (salen de `data/images.js`). Los dibujos SVG son propios. Sin foto libre: guayoyo (método) y marrón (bebida), que solo tienen dibujo.
+## Imágenes de la Guía
+Las fotos son de Wikimedia Commons con licencia libre (CC0, CC BY o CC BY-SA); se recortaron y redimensionaron. Cada foto muestra su autor y licencia, y la portada de la Guía lista todos los créditos (salen de `data/images.js`). Los dibujos SVG son propios. Sin foto libre: guayoyo (método) y marrón (bebida), que solo tienen dibujo.
 
 ## De dónde salen los datos
 - **Posiciones y nombres:** OpenStreetMap (ODbL). Las coordenadas son las del mapa, no aproximaciones.
@@ -51,3 +51,7 @@ Pendientes conocidos: geolocalizar La Taza (Los Palos Grandes), Quadro Café y C
 
 ## Créditos
 © colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright). Nombre inspirado en el café, no afiliado a ninguna cafetería.
+
+## Navegación
+Menú superior: **Mapa · Historia · Métodos · Bebidas · Guía** (la portada con las 7 lecturas). En pantallas estrechas se pliega en un desplegable. Los enlaces antiguos `#aprende/...` siguen funcionando.
+La Guía usa fotos de fondo, texturas y animaciones de aparición al hacer scroll (se desactivan con «reducir movimiento» del sistema).

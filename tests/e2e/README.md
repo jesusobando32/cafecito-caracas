@@ -5,9 +5,9 @@ Scripts para `playwright-cli run-code`. Cada uno devuelve un JSON con `errors`, 
 
 | Script | Qué comprueba |
 |---|---|
-| `audit-escritorio.js` | Mapa, ficha (minimapa y enlace a Google Maps) y las 8 páginas de Aprende: errores de consola, imágenes rotas, desbordes |
-| `audit-movil.js` | Panel inferior (peek/half/full), ficha abierta arriba, arrastre, Aprende y botón atrás |
-| `accesibilidad-axe.js` | axe-core (WCAG 2 A/AA + buenas prácticas) en mapa, ficha y Aprende |
+| `audit-escritorio.js` | Mapa, ficha (minimapa y enlace a Google Maps) y las 8 páginas de Guía: errores de consola, imágenes rotas, desbordes |
+| `audit-movil.js` | Panel inferior (peek/half/full), ficha abierta arriba, arrastre, Guía y botón atrás |
+| `accesibilidad-axe.js` | axe-core (WCAG 2 A/AA + buenas prácticas) en mapa, ficha y Guía |
 | `datos-extremos.js` | Nombres larguísimos, unicode/emoji, horarios partidos y cruce de medianoche, lista vacía |
 | `sin-red.js` | Overpass y mapa base bloqueados: la app debe seguir usable con los datos guardados |
 | `xss-nombres.js` | Un nombre malicioso de OSM NO debe ejecutar código (`pwned` debe ser `false`) |
@@ -25,3 +25,5 @@ Los datos de prueba se guardan en `localStorage` del propio navegador de Playwri
 
 Otros navegadores: `playwright-cli -s=<nombre> open <url> --browser=msedge|webkit` o `--device="iPhone 15"`. Probado en Chrome, Edge, Safari (WebKit) e iPhone 15 emulado; Firefox no arrancó en el equipo de desarrollo.
 Visual: `tests/visual/`. Rendimiento: `tests/perf/`.
+
+Nota: axe puede dar una falsa alarma de contraste en `.cluster` si el grupo de pines está a mitad de animación; repite la prueba.

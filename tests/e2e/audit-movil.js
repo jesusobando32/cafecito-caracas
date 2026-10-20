@@ -24,7 +24,7 @@ async page => {
   // tocar el mapa para bajar
   await page.mouse.click(vp.width / 2, 80); await page.waitForTimeout(500); out.afterMapTap = await st();
   // Aprende en móvil
-  await page.getByRole('link', { name: 'Aprende' }).click(); await page.waitForTimeout(600);
+  if (await page.locator('.nav-toggle').isVisible()) await page.locator('.nav-toggle').click(); await page.getByRole('link', { name: 'Guía', exact: true }).click(); await page.waitForTimeout(600);
   out.aprende = await page.evaluate(() => ({ title: document.title, sw: document.documentElement.scrollWidth, iw: innerWidth, hash: location.hash }));
   await page.screenshot({ path: 'mov-aprende.png' });
   await page.goBack().catch(() => {}); await page.waitForTimeout(500);

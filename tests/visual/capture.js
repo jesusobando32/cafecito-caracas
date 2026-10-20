@@ -14,7 +14,7 @@ async page => {
   if (w > 860) { await page.getByRole('button', { name: /Filtros/ }).click(); await shot('mapa-filtros'); await page.getByRole('button', { name: /Filtros/ }).click(); }
   await page.getByText('Gran Café').first().click(); await page.waitForTimeout(1200); await shot('ficha');
   await page.locator('.detail-back').click();
-  for (const [h, n] of [['#aprende', 'aprende-portada'], ['#aprende/historia', 'aprende-historia'], ['#aprende/metodos', 'aprende-metodos'], ['#aprende/bebidas', 'aprende-bebidas']]) {
+  for (const [h, n] of [['#guia', 'guia-portada'], ['#guia/historia', 'guia-historia'], ['#guia/metodos', 'guia-metodos'], ['#guia/bebidas', 'guia-bebidas']]) {
     await hash(h); await scrollAll(); await shot(n);
   }
   return out;

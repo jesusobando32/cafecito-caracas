@@ -13,7 +13,7 @@ async page => {
   await run('mapa');
   await page.getByText('Gran Café').first().click(); await run('ficha');
   await page.locator('.detail-back').click();
-  for (const h of ['#aprende', '#aprende/historia', '#aprende/metodos', '#aprende/bebidas']) {
+  for (const h of ['#guia', '#guia/historia', '#guia/metodos', '#guia/bebidas']) {
     await page.evaluate(h => { location.hash = h; dispatchEvent(new PopStateEvent('popstate')); }, h); await run(h);
   }
   return res;
