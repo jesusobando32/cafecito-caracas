@@ -22,6 +22,11 @@ Para verlo en local: `python -m http.server 8000` y abre http://localhost:8000.
 ## Búsqueda en vivo
 Al abrir el mapa y al moverlo, la app consulta la **Overpass API** de OpenStreetMap (sin clave) y añade las cafeterías (`amenity=cafe`) de la zona visible. Los locales de `data/cafes.js` son los curados (con tipo, métodos, snacks y fuentes) y tienen prioridad; los que llegan en vivo aparecen como *por confirmar*. Si Overpass no responde, se muestran solo los guardados.
 
+Los horarios simples (`opening_hours`) de los locales en vivo se convierten en el momento. La última búsqueda se guarda en el navegador para que la lista aparezca al instante.
+
+### Google Maps (opcional)
+Google no permite leer Maps directamente; hay que usar su API oficial (Places API New), que requiere clave y facturación (hay crédito mensual gratuito). Pon la clave en `config.js` (`googlePlacesKey`) y, al abrir la ficha de un local, la app buscará ese lugar en Google (a menos de 150 m) y mostrará **horario, valoración, enlace a Google Maps y sitio web**. Sin clave, esta parte queda desactivada. La clave queda visible en el navegador: restríngela por referrer HTTP (tu dominio de GitHub Pages y `localhost`) y solo a *Places API (New)*.
+
 ## De dónde salen los datos
 - **Posiciones y nombres:** OpenStreetMap (ODbL). Las coordenadas son las del mapa, no aproximaciones.
 - **Barrio:** Nominatim (geocodificación inversa), con correcciones manuales.

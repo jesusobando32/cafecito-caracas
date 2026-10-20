@@ -11,7 +11,7 @@ if (typeof CAFES_DATA === 'undefined' || !Array.isArray(CAFES_DATA)) {
   throw new Error('[Cafecito] CAFES_DATA no existe. data/cafes.js debe cargar antes que app.js');
 }
 
-const { createApp, ref, computed, watch, nextTick, shallowRef, onMounted, onUnmounted } = Vue;
+const { createApp, ref, reactive, computed, watch, nextTick, shallowRef, onMounted, onUnmounted } = Vue;
 
 // ── Constantes ───────────────────────────────────────────────
 const REPO_URL = 'https://github.com/jesusobando32/cafecito-caracas';
@@ -34,7 +34,14 @@ const ZONE_BOUNDS = L.latLngBounds(CAFES_DATA.map(c => [c.lat, c.lng])).pad(0.06
 // ── Búsqueda en vivo (OpenStreetMap vía Overpass API) ────────
 // CAFES_DATA son los locales curados (con tipo/métodos/snacks y fuente); lo demás se pide a Overpass
 // según la zona visible del mapa y se mezcla, sin duplicar por id de OSM.
-const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+const OVERPASS_ATTEMPT_MS = 15000;   // por servidor; si no responde, se prueba el siguiente
+const LIVE_CACHE_KEY = 'cafecito-live-v1';
+const LIVE_CACHE_MAX_AGE = 7 * 24 * 3600 * 1000;
 const LIVE_MAX_SPAN = 0.4;   // grados; evita pedir áreas enormes a Overpass
 const LIVE_TIMEOUT_MS = 30000;
 const CURATED_OSM = new Set(CAFES_DATA.map(c => c.osm).filter(Boolean));
@@ -44,13 +51,23 @@ async function fetchOverpassCafes(bounds, signal) {
   const data = `[out:json][timeout:25];(node["amenity"="cafe"](${bb});way["amenity"="cafe"](${bb}););out center tags;`;
   let lastErr;
   for (const url of OVERPASS_URLS) {
+    const attempt = new AbortController();
+    const onAbort = () => attempt.abort();
+    signal.addEventListener('abort', onAbort);
+    const timer = setTimeout(onAbort, OVERPASS_ATTEMPT_MS);
     try {
-      const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data }), signal });
+      const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data }), signal: attempt.signal });
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      return (await res.json()).elements || [];
+      const json = await res.json();
+      // Overpass responde 200 con "remark" y sin elementos cuando se queda sin tiempo o memoria
+      if (json.remark && !(json.elements && json.elements.length)) throw new Error(json.remark);
+      return json.elements || [];
     } catch (err) {
       if (signal.aborted) throw err;
       lastErr = err;
+    } finally {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
     }
   }
   throw lastErr;
@@ -68,7 +85,7 @@ function liveToCafe(el) {
     id: osm, osm, name: t.name,
     type: 'cafeteria', typeConfirmed: false,
     neighborhood, address: street || (neighborhood !== 'Sin barrio' ? neighborhood : 'Dirección sin confirmar'),
-    lat, lng, schedule: null, methods: [], drinks: [], snacks: [], description: '',
+    lat, lng, schedule: parseOsmHours(t.opening_hours), methods: [], drinks: [], snacks: [], description: '',
     sources: [`https://www.openstreetmap.org/${el.type}/${el.id}`],
   };
 }
@@ -160,6 +177,8 @@ const App = {
             <h1 class="detail-name">{{ activeCafe.name }}</h1>
             <p class="detail-address">📍 {{ activeCafe.address }}</p>
             <div class="status" :class="'status-' + activeStatus.state"><span class="status-dot"></span>{{ activeStatus.text }}</div>
+            <p v-if="activeCafe.google && activeCafe.google.rating" class="detail-rating">⭐ {{ activeCafe.google.rating.toFixed(1) }} <span class="muted">({{ activeCafe.google.ratingCount }} reseñas en Google)</span></p>
+            <p v-if="googleLoading" class="muted">Consultando Google Maps…</p>
           </header>
 
           <p v-if="activeCafe.description" class="detail-desc">{{ activeCafe.description }}</p>
@@ -197,8 +216,11 @@ const App = {
 
           <div class="detail-actions">
             <a class="btn btn-primary" :href="directionsUrl(activeCafe)" target="_blank" rel="noopener">Cómo llegar</a>
+            <a v-if="activeCafe.google && activeCafe.google.mapsUri" class="btn" :href="activeCafe.google.mapsUri" target="_blank" rel="noopener">Ver en Google Maps</a>
+            <a v-if="activeCafe.google && activeCafe.google.website" class="btn" :href="activeCafe.google.website" target="_blank" rel="noopener">Sitio web</a>
             <a class="btn" :href="issueUrl(activeCafe)" target="_blank" rel="noopener">¿Falta algo? Aporta datos</a>
           </div>
+          <p v-if="activeCafe.google" class="detail-sources">Horario y valoración: Google Maps</p>
           <p v-if="activeCafe.sources.length" class="detail-sources">
             Fuentes:
             <template v-for="(s, i) in activeCafe.sources" :key="s"><a :href="s" target="_blank" rel="noopener">[{{ i + 1 }}]</a> </template>
@@ -406,6 +428,19 @@ const App = {
     })[liveState.value]);
 
     const liveById = new Map();
+
+    // Última búsqueda guardada: la lista aparece al instante y se refresca en segundo plano
+    try {
+      const saved = JSON.parse(localStorage.getItem(LIVE_CACHE_KEY) || 'null');
+      if (saved && Date.now() - saved.t < LIVE_CACHE_MAX_AGE) {
+        saved.cafes.filter(c => !CURATED_OSM.has(c.osm)).forEach(c => liveById.set(c.id, c));
+        liveCafes.value = [...liveById.values()];
+      }
+    } catch (e) { /* sin caché: no pasa nada */ }
+    const saveLiveCache = () => {
+      try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify({ t: Date.now(), cafes: [...liveById.values()] })); } catch (e) { /* cuota o modo privado */ }
+    };
+
     const fetchedAreas = [];
     let liveAbort = null;
     let liveTimer = null;
@@ -429,6 +464,7 @@ const App = {
         const elements = await fetchOverpassCafes(area, ctrl.signal);
         elements.map(liveToCafe).filter(Boolean).forEach(c => liveById.set(c.id, c));
         liveCafes.value = [...liveById.values()];
+        saveLiveCache();
         fetchedAreas.push(area);
         liveUpdated.value = new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
         liveState.value = 'ok';
@@ -448,7 +484,27 @@ const App = {
       loadLive({ force: true });
     }
 
-    const activeCafe = computed(() => cafes.value.find(c => c.id === activeId.value) || null);
+    // Datos de Google Places por local (solo si hay clave en config.js); se piden al abrir la ficha
+    const googleInfo = reactive({});
+    const googleLoading = ref(false);
+    const activeCafe = computed(() => {
+      const base = cafes.value.find(c => c.id === activeId.value);
+      const g = base && googleInfo[base.id];
+      return g ? { ...base, schedule: g.schedule || base.schedule, google: g } : base || null;
+    });
+    watch(activeId, async (id) => {
+      const cafe = cafes.value.find(c => c.id === id);
+      if (!cafe || !GOOGLE_ENABLED || id in googleInfo) return;
+      googleLoading.value = true;
+      try {
+        const info = await enrichFromGoogle(cafe);
+        googleInfo[id] = info;
+      } catch (err) {
+        console.warn('[Cafecito] Google Places no respondió:', err);
+      } finally {
+        googleLoading.value = false;
+      }
+    });
     const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
     const todayId = computed(() => caracasNow().day);
 
@@ -612,7 +668,7 @@ const App = {
     return {
       WIKI_DATA, TYPE_INFO, TYPE_OPTIONS,
       METHOD_OPTIONS: methodOptions, SNACK_OPTIONS: snackOptions, HOOD_OPTIONS: hoodOptions,
-      liveState, liveText, refreshLive,
+      liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       view, mobileView, wikiTab, wikiTabs, wikiArticle,
       query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
