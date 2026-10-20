@@ -10,6 +10,8 @@ Scripts para `playwright-cli run-code`. Cada uno devuelve un JSON con `errors`, 
 | `accesibilidad-axe.js` | axe-core (WCAG 2 A/AA + buenas prácticas) en mapa, ficha y Guía |
 | `datos-extremos.js` | Nombres larguísimos, unicode/emoji, horarios partidos y cruce de medianoche, lista vacía |
 | `sin-red.js` | Overpass y mapa base bloqueados: la app debe seguir usable con los datos guardados |
+| `enlaces-maps.js` | Para los 53 locales: enlaces a Google Maps con SUS coordenadas y todas dentro de Caracas |
+| `google-maps-real.js` | MANUAL: abre Google Maps real y comprueba que el mapa queda a pocos metros del local |
 | `xss-nombres.js` | Un nombre malicioso de OSM NO debe ejecutar código (`pwned` debe ser `false`) |
 
 ## Cómo correrlos

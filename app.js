@@ -328,6 +328,7 @@ const App = {
               </a>
             </div>
             <p class="detail-address">📍 {{ activeCafe.address }}</p>
+            <p class="detail-pin"><a :href="mapsPinUrl(activeCafe)" target="_blank" rel="noopener">Ver el punto exacto en Google Maps</a></p>
           </section>
 
           <section class="detail-section">
@@ -870,9 +871,13 @@ const App = {
 
     const statusOf = (cafe) => getStatus(cafe.schedule);
     const directionsUrl = (c) => `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`;
-    // Ficha del lugar en Google Maps (con horario, fotos y reseñas); no requiere clave
-    const mapsUrl = (c) => (c.google && c.google.mapsUri)
-      || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name} ${c.lat},${c.lng}`)}`;
+    // Enlaces a Google Maps. OJO: una búsqueda de texto libre ("nombre lat,lng") se interpreta sin zona y puede caer en otro país.
+    //  - mapsSearchUrl: busca el nombre con el visor ya centrado en el local (zoom 18): abre su ficha si Google la tiene
+    //    (horario, fotos, reseñas) y, si no, muestra los resultados de esa misma calle. Nunca otra ciudad.
+    //  - mapsPinUrl: pone un marcador en las coordenadas exactas, sin depender de que Google conozca el local.
+    const mapsSearchUrl = (c) => `https://www.google.com/maps/search/${encodeURIComponent(c.name)}/@${c.lat},${c.lng},18z`;
+    const mapsPinUrl = (c) => `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
+    const mapsUrl = (c) => (c.google && c.google.mapsUri) || mapsSearchUrl(c);
 
     // Foto de la ficha: la propia (data/photos.js) > Google Maps (con clave) > dibujo de cafetería
     const photoFailed = ref(false);
@@ -1042,7 +1047,7 @@ const App = {
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       NAV, navActive, goNav, menuOpen, LEARN_TOPICS, wikiEl, sidebarEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
-      cafePhoto, photoFailed, mapsUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
+      cafePhoto, photoFailed, mapsUrl, mapsPinUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
       topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
       METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,
       view, sheet, onHandleDown, onHandleUp, onHandleCancel, onSearchFocus,

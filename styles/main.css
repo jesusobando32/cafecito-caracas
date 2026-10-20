@@ -557,3 +557,5 @@ a, button, summary, .chip, .cafe-card { touch-action: manipulation; -webkit-tap-
   .reveal { opacity: 1; transform: none; }
   .learn-hero::before { animation: none; }
 }
+
+.detail-pin { margin: 4px 0 0; font-size: .85rem; }

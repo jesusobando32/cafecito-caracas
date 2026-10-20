@@ -55,3 +55,6 @@ Pendientes conocidos: geolocalizar La Taza (Los Palos Grandes), Quadro Café y C
 ## Navegación
 Menú superior: **Mapa · Historia · Métodos · Bebidas · Guía** (la portada con las 7 lecturas). En pantallas estrechas se pliega en un desplegable. Los enlaces antiguos `#aprende/...` siguen funcionando.
 La Guía usa fotos de fondo, texturas y animaciones de aparición al hacer scroll (se desactivan con «reducir movimiento» del sistema).
+
+## Enlaces a Google Maps
+El minimapa y «Ver horario» abren `maps/search/<nombre>/@lat,lng,18z` (búsqueda del nombre con el visor centrado en el local: abre su ficha si Google la tiene, y si no muestra esa zona); «Ver el punto exacto» pone un marcador en las coordenadas y «Cómo llegar» traza la ruta a ellas. Antes se mandaba un texto libre «nombre lat,lng», que Google interpretaba sin zona y podía caer en otro país. `tests/e2e/enlaces-maps.js` lo verifica para los 53 locales.
