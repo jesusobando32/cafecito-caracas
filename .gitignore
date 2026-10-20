@@ -1,1 +1,4 @@
 .playwright-cli/
+
+# Capturas sueltas de las pruebas
+/*.png

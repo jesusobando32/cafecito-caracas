@@ -19,7 +19,7 @@ async page => {
   await page.getByText('Gran Café').first().click(); await page.waitForTimeout(1500); await check('ficha');
   const href = await page.locator('.minimap-link').getAttribute('href'); out.notes.push('minimap href: ' + href);
   out.notes.push('mapas leaflet en ficha: ' + await page.locator('#minimap.leaflet-container').count());
-  await page.screenshot({ path: `${vp.width}-ficha.png` });
+  await page.screenshot({ path: `tests/e2e/out/${vp.width}-ficha.png` });
   await page.locator('.detail-back').click(); await page.waitForTimeout(400);
   // Aprende
   for (const id of ['', 'historia', 'regiones', 'especialidad', 'tipo', 'metodos', 'bebidas', 'glosario']) {
@@ -33,6 +33,6 @@ async page => {
   await page.waitForTimeout(400);
   const det = page.locator('.credits details'); out.notes.push('créditos abiertos por defecto: ' + await det.evaluate(d => d.open));
   await page.evaluate(() => { const w = document.querySelector('.wiki-page'); w.scrollTop = w.scrollHeight; }); await page.waitForTimeout(400);
-  await page.screenshot({ path: `${vp.width}-hub-fondo.png` });
+  await page.screenshot({ path: `tests/e2e/out/${vp.width}-hub-fondo.png` });
   return out;
 }
