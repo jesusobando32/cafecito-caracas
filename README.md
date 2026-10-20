@@ -9,7 +9,9 @@ Sitio 100 % estático (sin build): Vue 3 + Leaflet + leaflet.markercluster por C
 
 ```
 index.html        Estructura y librerías
-app.js            Aplicación Vue (filtros, mapa, detalle, wiki)
+app.js            Aplicación Vue (filtros, mapa, detalle, Aprende con rutas #aprende/tema)
+places.js         Horarios OSM y Google Places opcional
+config.js         Clave opcional de Google Places
 data/cafes.js     Cafeterías (GENERADO por scripts/build_data.py)
 data/wiki.js      Contenido de la pestaña Aprende
 styles/main.css   Estilos

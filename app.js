@@ -26,6 +26,18 @@ const TYPE_INFO = {
 };
 const TYPE_OPTIONS = ['cafeteria', 'especialidad'];
 
+// Lecturas de Aprende, en orden. Los artículos salen de WIKI_DATA.articles; el resto se renderiza a medida.
+const LEARN_EXTRA = {
+  metodos:  { title: 'Métodos de preparación', lead: 'Las formas más comunes de preparar café en una cafetería o en casa.' },
+  bebidas:  { title: 'Bebidas', lead: 'Del guayoyo de casa al flat white de especialidad.' },
+  glosario: { title: 'Glosario', lead: 'Palabras que verás en las cartas y en las bolsas de café.' },
+};
+const LEARN_TOPICS = ['historia', 'regiones', 'especialidad', 'tipo', 'metodos', 'bebidas', 'glosario'].map((id, i) => {
+  const article = WIKI_DATA.articles.find(a => a.id === id);
+  const base = article ? { title: article.title, lead: article.lead, kind: 'article' } : { ...LEARN_EXTRA[id], kind: id };
+  return { id, num: String(i + 1).padStart(2, '0'), ...base };
+});
+
 const uniqSorted = (arr) => [...new Set(arr)].sort((a, b) => a.localeCompare(b, 'es'));
 
 // Encuadre inicial: se ajusta a todas las cafeterías curadas (Caricuao → Petare, La Trinidad, El Hatillo)
@@ -158,7 +170,7 @@ const App = {
       </a>
       <nav class="main-nav" aria-label="Secciones">
         <button class="nav-btn" :class="{ active: view === 'map' }" @click="view = 'map'" type="button">Mapa</button>
-        <button class="nav-btn" :class="{ active: view === 'wiki' }" @click="view = 'wiki'" type="button">Aprende</button>
+        <button class="nav-btn" :class="{ active: view === 'wiki' }" @click="openTopic(null)" type="button">Aprende</button>
       </nav>
       <span class="header-badge" aria-live="polite">{{ filteredCafes.length }} de {{ totalCount }}</span>
     </header>
@@ -326,60 +338,135 @@ const App = {
     </div>
 
     <!-- ═════════ APRENDE ═════════ -->
-    <div v-show="view === 'wiki'" class="wiki-page">
-      <div class="wiki-container">
-        <nav class="wiki-nav" aria-label="Índice">
-          <button v-for="t in wikiTabs" :key="t.id" class="wiki-nav-item" :class="{ active: wikiTab === t.id }" @click="wikiTab = t.id" type="button">
-            <span aria-hidden="true">{{ t.icon }}</span> {{ t.title }}
+    <div v-show="view === 'wiki'" class="wiki-page" ref="wikiEl">
+
+      <!-- Portada: landing de Aprende -->
+      <div v-if="!topic" class="learn">
+        <section class="learn-hero">
+          <div class="learn-wrap learn-hero-grid">
+            <div>
+              <p class="eyebrow">Aprende</p>
+              <h1 class="learn-title">Todo lo que hay detrás de tu taza</h1>
+              <p class="learn-intro">Siete lecturas cortas para entender de dónde viene el café, qué significa «de especialidad» y qué pedir la próxima vez que estés frente a la barra.</p>
+              <div class="learn-actions">
+                <button class="btn btn-primary" type="button" @click="openTopic(LEARN_TOPICS[0].id)">Empezar por la historia</button>
+                <button class="btn btn-ghost" type="button" @click="view = 'map'">Ver cafeterías en el mapa</button>
+              </div>
+            </div>
+            <svg class="learn-art" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M40 90h96v38a40 40 0 0 1-40 40h-16a40 40 0 0 1-40-40V90z"/>
+              <path d="M136 100h14a20 20 0 0 1 0 40h-14"/>
+              <path class="steam" d="M70 70c-8-10 8-16 0-28M98 70c-8-10 8-16 0-28M126 70c-8-10 8-16 0-28"/>
+            </svg>
+          </div>
+        </section>
+
+        <section class="learn-wrap learn-index" aria-labelledby="idx-title">
+          <h2 id="idx-title" class="eyebrow eyebrow-dark">Índice</h2>
+          <ol class="idx-list">
+            <li v-for="t in LEARN_TOPICS" :key="t.id">
+              <a class="idx-row" :href="'#aprende/' + t.id" @click.prevent="openTopic(t.id)">
+                <span class="idx-num">{{ t.num }}</span>
+                <span class="idx-text">
+                  <span class="idx-title">{{ t.title }}</span>
+                  <span class="idx-lead">{{ t.lead }}</span>
+                </span>
+                <span class="idx-arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ol>
+        </section>
+
+        <section class="learn-close">
+          <div class="learn-wrap learn-close-inner">
+            <h2 class="learn-close-title">Ahora, a probarlo</h2>
+            <p>Con lo que sabes, el mapa se lee distinto: filtra por método, busca un V60 o un buen espresso.</p>
+            <button class="btn btn-primary" type="button" @click="view = 'map'">Abrir el mapa</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tema -->
+      <div v-else class="learn">
+        <header class="topic-hero">
+          <div class="learn-wrap">
+            <button class="crumb" type="button" @click="openTopic(null)">← Aprende</button>
+            <p class="eyebrow">Lectura {{ topic.num }} de {{ LEARN_TOPICS.length }}</p>
+            <h1 class="learn-title topic-title">{{ topic.title }}</h1>
+            <p class="learn-intro">{{ topic.lead }}</p>
+          </div>
+        </header>
+
+        <div class="learn-wrap topic-layout">
+          <aside v-if="topicToc.length > 1" class="toc" aria-label="En esta página">
+            <p class="toc-label">En esta página</p>
+            <ul>
+              <li v-for="item in topicToc" :key="item.id">
+                <button type="button" @click="scrollToId(item.id)">{{ item.label }}</button>
+              </li>
+            </ul>
+          </aside>
+
+          <main class="topic-main">
+            <!-- Artículo en secciones -->
+            <div v-if="topic.kind === 'article'" class="prose">
+              <section v-for="(sec, i) in topicArticle.sections" :key="sec.subtitle" :id="'sec-' + i" class="prose-sec">
+                <span class="sec-num" aria-hidden="true">{{ String(i + 1).padStart(2, '0') }}</span>
+                <div>
+                  <h2 class="sec-title">{{ sec.subtitle }}</h2>
+                  <p>{{ sec.text }}</p>
+                </div>
+              </section>
+            </div>
+
+            <!-- Métodos -->
+            <div v-else-if="topic.kind === 'metodos'" class="rows">
+              <section v-for="(m, name) in WIKI_DATA.methods" :key="name" :id="'method-' + name" class="row-item">
+                <div class="row-head">
+                  <span class="row-icon" aria-hidden="true">{{ m.icon }}</span>
+                  <h2 class="row-title">{{ m.title }}</h2>
+                  <p class="row-kicker">{{ m.description }}</p>
+                </div>
+                <div class="row-body">
+                  <p>{{ m.details }}</p>
+                  <dl class="spec">
+                    <div><dt>Molienda</dt><dd>{{ m.grind }}</dd></div>
+                    <div><dt>Tiempo</dt><dd>{{ m.time }}</dd></div>
+                    <div><dt>Ratio</dt><dd>{{ m.ratio }}</dd></div>
+                  </dl>
+                </div>
+              </section>
+            </div>
+
+            <!-- Bebidas -->
+            <div v-else-if="topic.kind === 'bebidas'" class="rows">
+              <section v-for="d in WIKI_DATA.drinks" :key="d.name" class="row-item row-compact">
+                <div class="row-head"><h2 class="row-title">{{ d.name }}</h2></div>
+                <div class="row-body"><p>{{ d.text }}</p></div>
+              </section>
+            </div>
+
+            <!-- Glosario -->
+            <dl v-else class="rows glossary">
+              <div v-for="g in WIKI_DATA.glossary" :key="g.term" class="row-item row-compact">
+                <dt class="row-head row-title">{{ g.term }}</dt>
+                <dd class="row-body">{{ g.text }}</dd>
+              </div>
+            </dl>
+          </main>
+        </div>
+
+        <nav class="learn-wrap pager" aria-label="Otras lecturas">
+          <a v-if="prevTopic" class="pager-link pager-prev" :href="'#aprende/' + prevTopic.id" @click.prevent="openTopic(prevTopic.id)">
+            <span class="pager-dir">← Anterior</span><span class="pager-name">{{ prevTopic.title }}</span>
+          </a>
+          <a v-if="nextTopic" class="pager-link pager-next" :href="'#aprende/' + nextTopic.id" @click.prevent="openTopic(nextTopic.id)">
+            <span class="pager-dir">Siguiente →</span><span class="pager-name">{{ nextTopic.title }}</span>
+          </a>
+          <button v-else class="pager-link pager-next" type="button" @click="view = 'map'">
+            <span class="pager-dir">Para terminar →</span><span class="pager-name">Abrir el mapa de cafeterías</span>
           </button>
         </nav>
-
-        <main class="wiki-content">
-          <article v-if="wikiArticle" class="wiki-article">
-            <h1 class="wiki-h1">{{ wikiArticle.icon }} {{ wikiArticle.title }}</h1>
-            <p class="wiki-lead">{{ wikiArticle.lead }}</p>
-            <section v-for="sec in wikiArticle.sections" :key="sec.subtitle" class="wiki-section">
-              <h3 class="wiki-h3">{{ sec.subtitle }}</h3>
-              <p class="wiki-p">{{ sec.text }}</p>
-            </section>
-          </article>
-
-          <article v-else-if="wikiTab === 'metodos'" class="wiki-article">
-            <h1 class="wiki-h1">☕ Métodos de preparación</h1>
-            <p class="wiki-lead">Las formas más comunes de preparar café en una cafetería o en casa.</p>
-            <div class="wiki-grid">
-              <section v-for="(m, name) in WIKI_DATA.methods" :key="name" class="wiki-card" :id="'method-' + name">
-                <h3 class="wiki-card-title">{{ m.icon }} {{ m.title }}</h3>
-                <p class="wiki-card-desc">{{ m.description }}</p>
-                <p class="wiki-p">{{ m.details }}</p>
-                <dl class="wiki-meta">
-                  <div><dt>Molienda</dt><dd>{{ m.grind }}</dd></div>
-                  <div><dt>Tiempo</dt><dd>{{ m.time }}</dd></div>
-                  <div><dt>Ratio</dt><dd>{{ m.ratio }}</dd></div>
-                </dl>
-              </section>
-            </div>
-          </article>
-
-          <article v-else-if="wikiTab === 'bebidas'" class="wiki-article">
-            <h1 class="wiki-h1">🥛 Bebidas</h1>
-            <p class="wiki-lead">Del guayoyo de casa al flat white de especialidad.</p>
-            <div class="wiki-grid">
-              <section v-for="d in WIKI_DATA.drinks" :key="d.name" class="wiki-card">
-                <h3 class="wiki-card-title">{{ d.name }}</h3>
-                <p class="wiki-p">{{ d.text }}</p>
-              </section>
-            </div>
-          </article>
-
-          <article v-else-if="wikiTab === 'glosario'" class="wiki-article">
-            <h1 class="wiki-h1">🔤 Glosario</h1>
-            <p class="wiki-lead">Palabras que verás en las cartas y en las bolsas de café.</p>
-            <dl class="wiki-glossary">
-              <div v-for="g in WIKI_DATA.glossary" :key="g.term"><dt>{{ g.term }}</dt><dd>{{ g.text }}</dd></div>
-            </dl>
-          </article>
-        </main>
       </div>
     </div>
 
@@ -392,7 +479,8 @@ const App = {
   setup() {
     const view = ref('map');          // 'map' | 'wiki'
     const mobileView = ref('list');   // 'list' | 'map' (solo móvil)
-    const wikiTab = ref('historia');
+    const wikiTab = ref(null);        // null = portada de Aprende; si no, id del tema
+    const wikiEl = ref(null);
 
     const query = ref('');
     const selTypes = ref([]);
@@ -508,13 +596,54 @@ const App = {
     const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
     const todayId = computed(() => caracasNow().day);
 
-    const wikiTabs = [
-      ...WIKI_DATA.articles.map(a => ({ id: a.id, icon: a.icon, title: a.title })),
-      { id: 'metodos', icon: '☕', title: 'Métodos' },
-      { id: 'bebidas', icon: '🥛', title: 'Bebidas' },
-      { id: 'glosario', icon: '🔤', title: 'Glosario' },
-    ];
-    const wikiArticle = computed(() => WIKI_DATA.articles.find(a => a.id === wikiTab.value) || null);
+    // ── Aprende: portada + una página por tema ─────────────
+    const topicIndex = computed(() => LEARN_TOPICS.findIndex(t => t.id === wikiTab.value));
+    const topic = computed(() => LEARN_TOPICS[topicIndex.value] || null);
+    const prevTopic = computed(() => LEARN_TOPICS[topicIndex.value - 1] || null);
+    const nextTopic = computed(() => LEARN_TOPICS[topicIndex.value + 1] || null);
+    const topicArticle = computed(() => (topic.value && topic.value.kind === 'article')
+      ? WIKI_DATA.articles.find(a => a.id === topic.value.id) : null);
+    const topicToc = computed(() => {
+      if (!topic.value) return [];
+      if (topicArticle.value) return topicArticle.value.sections.map((s, i) => ({ id: 'sec-' + i, label: s.subtitle }));
+      if (topic.value.kind === 'metodos') return Object.entries(WIKI_DATA.methods).map(([name, m]) => ({ id: 'method-' + name, label: m.title }));
+      return [];
+    });
+
+    function scrollToId(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function openTopic(id) {
+      view.value = 'wiki';
+      wikiTab.value = id;
+      nextTick(() => { if (wikiEl.value) wikiEl.value.scrollTop = 0; });
+    }
+
+    // La URL refleja dónde estás (#aprende, #aprende/historia) para que "atrás" y los enlaces funcionen
+    const hashFor = () => view.value === 'map' ? '' : (wikiTab.value ? '#aprende/' + wikiTab.value : '#aprende');
+    function readHash() {
+      const [section, id] = location.hash.replace(/^#/, '').split('/');
+      if (section === 'aprende') {
+        view.value = 'wiki';
+        wikiTab.value = LEARN_TOPICS.some(t => t.id === id) ? id : null;
+      } else {
+        view.value = 'map';
+      }
+    }
+    readHash();
+    watch([view, wikiTab], () => {
+      const next = hashFor();
+      if (location.hash !== next) {
+        try { history.pushState(null, '', next || location.pathname + location.search); } catch (e) { /* file:// */ }
+      }
+      if (view.value === 'wiki') {
+        document.title = (topic.value ? topic.value.title : 'Aprende') + ' · Cafecito Caracas';
+      } else {
+        document.title = activeCafe.value ? `${activeCafe.value.name} · Cafecito Caracas` : 'Cafecito Caracas · Mapa de cafeterías';
+      }
+    });
+    window.addEventListener('popstate', readHash);
 
     // ── Filtrado ───────────────────────────────────────────
     function matches(cafe, skip) {
@@ -584,8 +713,7 @@ const App = {
       if (v === 'map') nextTick(() => map.value && map.value.invalidateSize());
     }
     function openWikiMethod(name) {
-      view.value = 'wiki';
-      wikiTab.value = 'metodos';
+      openTopic('metodos');
       nextTick(() => {
         const el = document.getElementById('method-' + name);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -660,6 +788,7 @@ const App = {
     });
 
     onUnmounted(() => {
+      window.removeEventListener('popstate', readHash);
       clearTimeout(liveTimer);
       if (liveAbort) liveAbort.abort();
       if (map.value) { map.value.remove(); map.value = null; }
@@ -670,7 +799,8 @@ const App = {
       METHOD_OPTIONS: methodOptions, SNACK_OPTIONS: snackOptions, HOOD_OPTIONS: hoodOptions,
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
-      view, mobileView, wikiTab, wikiTabs, wikiArticle,
+      LEARN_TOPICS, wikiEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
+      view, mobileView,
       query, selTypes, selMethods, selSnacks, selHood, filtersOpen,
       activeId, hoverId, listEl, activeCafe, activeStatus, todayId,
       filteredCafes, facet, activeFilterCount,
