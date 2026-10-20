@@ -26,16 +26,38 @@ const isMobile = () => window.matchMedia('(max-width: 860px)').matches;
 function hasWebGL() {
   try { const c = document.createElement('canvas'); return Boolean(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
 }
+// MapLibre pesa ~800 KB: se descarga después de pintar la app para no retrasar la lista y los filtros
+const MAPLIBRE_CSS = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+const MAPLIBRE_JS = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+const MAPLIBRE_LEAFLET_JS = 'https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js';
+let mapLibreReady = null;
+function loadMapLibre() {
+  if (window.maplibregl && L.maplibreGL) return Promise.resolve();
+  if (!mapLibreReady) {
+    const script = (src) => new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('No cargó ' + src));
+      document.head.appendChild(el);
+    });
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = MAPLIBRE_CSS; document.head.appendChild(css);
+    mapLibreReady = script(MAPLIBRE_JS).then(() => script(MAPLIBRE_LEAFLET_JS));
+  }
+  return mapLibreReady;
+}
 function addBaseLayer(m) {
   const raster = () => L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19, className: 'base-tiles' }).addTo(m);
-  if (!(window.maplibregl && L.maplibreGL && hasWebGL())) { raster(); return; }
-  const gl = L.maplibreGL({ style: BASE_STYLE, attribution: BASE_ATTRIBUTION }).addTo(m);
-  const mgl = gl.getMaplibreMap();
-  let fellBack = false;
-  mgl.on('error', () => {
-    if (fellBack || mgl.isStyleLoaded()) return;
-    fellBack = true; m.removeLayer(gl); raster();
-  });
+  if (!hasWebGL()) { raster(); return; }
+  loadMapLibre().then(() => {
+    if (!m._container || !m._container.isConnected) return;   // el mapa se destruyó mientras cargaba
+    const gl = L.maplibreGL({ style: BASE_STYLE, attribution: BASE_ATTRIBUTION }).addTo(m);
+    const mgl = gl.getMaplibreMap();
+    let fellBack = false;
+    mgl.on('error', () => {
+      if (fellBack || mgl.isStyleLoaded()) return;
+      fellBack = true; m.removeLayer(gl); raster();
+    });
+  }).catch(raster);
 }
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
