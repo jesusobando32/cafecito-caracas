@@ -498,3 +498,62 @@ a, button, summary, .chip, .cafe-card { touch-action: manipulation; -webkit-tap-
   .main-nav.open { opacity: 1; transform: none; visibility: visible; pointer-events: auto; }
   .nav-btn { padding: 12px 14px; font-size: 1rem; }
 }
+
+/* ── Guía: fondos y animaciones ─────────────────────────── */
+/* Portada: foto de granos de fondo con zoom lento y degradado que mantiene legible el texto */
+.learn-hero { position: relative; isolation: isolate; }
+.learn-hero::before {
+  content: ''; position: absolute; inset: -5%; z-index: -2;
+  background: url('../img/aprende/sec-tueste-1200.jpg') center / cover no-repeat;
+  animation: bg-drift 28s ease-in-out infinite alternate;
+}
+.learn-hero::after {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(100deg, rgba(43, 29, 20, .95) 0%, rgba(43, 29, 20, .78) 45%, rgba(43, 29, 20, .38) 100%);
+}
+@keyframes bg-drift { from { transform: scale(1) translate3d(0, 0, 0); } to { transform: scale(1.12) translate3d(-2%, 1.5%, 0); } }
+
+/* Lecturas: granos de café dibujados como textura y un resplandor cálido */
+.topic-hero {
+  background-color: var(--espresso);
+  background-image:
+    radial-gradient(60% 90% at 88% 0%, rgba(196, 122, 61, .24), transparent 62%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170' viewBox='0 0 170 170' fill='none' stroke='%23fff' stroke-opacity='.075' stroke-width='2' stroke-linecap='round'%3E%3Cg transform='translate(32 34) rotate(25)'%3E%3Cellipse rx='14' ry='9.5'/%3E%3Cpath d='M-13 0 Q0 -6 13 0'/%3E%3C/g%3E%3Cg transform='translate(120 62) rotate(-38)'%3E%3Cellipse rx='14' ry='9.5'/%3E%3Cpath d='M-13 0 Q0 -6 13 0'/%3E%3C/g%3E%3Cg transform='translate(66 130) rotate(72)'%3E%3Cellipse rx='14' ry='9.5'/%3E%3Cpath d='M-13 0 Q0 -6 13 0'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Cierre con cerezas de café de fondo */
+.learn-close {
+  background-image: linear-gradient(90deg, var(--crema) 38%, rgba(247, 241, 232, .55) 100%), url('../img/aprende/sec-cereza-1200.jpg');
+  background-size: cover; background-position: right center;
+}
+@media (max-width: 640px) {
+  .learn-hero::before { background-image: url('../img/aprende/sec-tueste-600.jpg'); }
+  .learn-close { background-image: linear-gradient(90deg, rgba(247, 241, 232, .94), rgba(247, 241, 232, .88)), url('../img/aprende/sec-cereza-600.jpg'); }
+}
+
+/* Aparición al hacer scroll (la activa v-reveal) */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .65s ease, transform .65s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--d, 0ms); }
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* Entrada de las cabeceras y de cada página */
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(32px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(.85) rotate(-4deg); } to { opacity: .9; transform: none; } }
+@keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+.learn { animation: page-in .4s ease both; }
+.learn-hero .eyebrow, .topic-hero .crumb, .topic-hero .eyebrow { animation: rise .7s cubic-bezier(.2, .7, .2, 1) .05s both; }
+.learn-hero .learn-title, .topic-hero .learn-title { animation: rise .8s cubic-bezier(.2, .7, .2, 1) .15s both; }
+.learn-hero .learn-intro, .topic-hero .learn-intro { animation: rise .8s cubic-bezier(.2, .7, .2, 1) .3s both; }
+.learn-hero .learn-actions { animation: rise .8s cubic-bezier(.2, .7, .2, 1) .45s both; }
+.learn-art { animation: pop-in .9s cubic-bezier(.2, .8, .2, 1) .35s both; }
+.topic-hero .fig { animation: slide-in .9s cubic-bezier(.2, .7, .2, 1) .25s both; }
+
+/* Pequeños gestos al pasar el ratón */
+.fig img, .diagram-art { transition: box-shadow .3s ease, transform .3s ease; }
+.row-media .fig:hover img, .row-media .diagram:hover .diagram-art { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(43, 29, 20, .16); }
+.idx-title { transition: color .2s; }
+.idx-row:hover .idx-title { color: var(--caramel-dark); }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  .learn-hero::before { animation: none; }
+}

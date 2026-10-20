@@ -96,6 +96,20 @@ const DRINK_IMAGES = {
 };
 const CREDITS = Object.entries(IMAGES).map(([id, img]) => ({ id, ...img }));
 
+// Aparición al hacer scroll: añade .is-in cuando el elemento entra en pantalla (v-reveal="retraso_ms"). Sin animación si el usuario pide menos movimiento.
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const revealObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+  entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); revealObserver.unobserve(e.target); } });
+}, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' }) : null;
+const vReveal = {
+  mounted(el, binding) {
+    el.classList.add('reveal');
+    if (binding.value) el.style.setProperty('--d', binding.value + 'ms');
+    if (!revealObserver || prefersReducedMotion()) el.classList.add('is-in'); else revealObserver.observe(el);
+  },
+  unmounted(el) { if (revealObserver) revealObserver.unobserve(el); },
+};
+
 // Foto con pie de crédito (autor, licencia y fuente salen de data/images.js)
 const Fig = {
   props: { id: String, sizes: { type: String, default: '100vw' }, eager: Boolean, dark: Boolean },
@@ -454,7 +468,7 @@ const App = {
     <div v-show="view === 'wiki'" class="wiki-page" role="main" ref="wikiEl">
 
       <!-- Portada: landing de la guía -->
-      <div v-if="!topic" class="learn">
+      <div v-if="!topic" class="learn" key="hub">
         <section class="learn-hero">
           <div class="learn-wrap learn-hero-grid">
             <div>
@@ -477,7 +491,7 @@ const App = {
         <section class="learn-wrap learn-index" aria-labelledby="idx-title">
           <h2 id="idx-title" class="eyebrow eyebrow-dark">Índice</h2>
           <ol class="idx-list">
-            <li v-for="t in LEARN_TOPICS" :key="t.id">
+            <li v-for="(t, i) in LEARN_TOPICS" :key="t.id" v-reveal="i * 70">
               <a class="idx-row" :href="'#guia/' + t.id" @click.prevent="openTopic(t.id)">
                 <span class="idx-num">{{ t.num }}</span>
                 <span class="idx-text">
@@ -491,13 +505,13 @@ const App = {
         </section>
 
         <section class="learn-close">
-          <div class="learn-wrap learn-close-inner">
+          <div class="learn-wrap learn-close-inner" v-reveal>
             <h2 class="learn-close-title">Ahora, a probarlo</h2>
             <p>Con lo que sabes, el mapa se lee distinto: filtra por método, busca un V60 o un buen espresso.</p>
             <a class="btn btn-primary" href="./" @click.prevent="view = 'map'">Abrir el mapa</a>
           </div>
         </section>
-        <div class="learn-wrap credits">
+        <div class="learn-wrap credits" v-reveal>
           <details>
             <summary>Créditos de las imágenes <span class="credits-count">{{ CREDITS.length }}</span></summary>
             <p class="credits-intro">Las fotos son de Wikimedia Commons con licencia libre; se recortaron y redimensionaron. Los dibujos son propios.</p>
@@ -513,7 +527,7 @@ const App = {
       </div>
 
       <!-- Tema -->
-      <div v-else class="learn">
+      <div v-else class="learn" :key="topic.id">
         <div class="topic-hero">
           <div class="learn-wrap topic-hero-grid" :class="{ 'has-img': topicHero }">
             <div>
@@ -539,7 +553,7 @@ const App = {
           <div class="topic-main">
             <!-- Artículo en secciones -->
             <div v-if="topic.kind === 'article'" class="prose">
-              <section v-for="(sec, i) in topicArticle.sections" :key="sec.subtitle" :id="'sec-' + i" class="prose-sec">
+              <section v-for="(sec, i) in topicArticle.sections" :key="sec.subtitle" :id="'sec-' + i" class="prose-sec" v-reveal>
                 <span class="sec-num" aria-hidden="true">{{ String(i + 1).padStart(2, '0') }}</span>
                 <div>
                   <h2 class="sec-title">{{ sec.subtitle }}</h2>
@@ -551,7 +565,7 @@ const App = {
 
             <!-- Métodos -->
             <div v-else-if="topic.kind === 'metodos'" class="rows">
-              <section v-for="(m, name) in WIKI_DATA.methods" :key="name" :id="'method-' + name" class="row-item">
+              <section v-for="(m, name) in WIKI_DATA.methods" :key="name" :id="'method-' + name" class="row-item" v-reveal>
                 <div class="row-head">
                   <h2 class="row-title">{{ m.title }}</h2>
                   <p class="row-kicker">{{ m.description }}</p>
@@ -576,7 +590,7 @@ const App = {
 
             <!-- Bebidas -->
             <div v-else-if="topic.kind === 'bebidas'" class="rows">
-              <section v-for="d in WIKI_DATA.drinks" :key="d.name" class="row-item row-compact">
+              <section v-for="d in WIKI_DATA.drinks" :key="d.name" class="row-item row-compact" v-reveal>
                 <div class="row-head"><h2 class="row-title">{{ d.name }}</h2></div>
                 <div class="row-body">
                   <p>{{ d.text }}</p>
@@ -595,7 +609,7 @@ const App = {
 
             <!-- Glosario -->
             <dl v-else class="rows glossary">
-              <div v-for="g in WIKI_DATA.glossary" :key="g.term" class="row-item row-compact">
+              <div v-for="g in WIKI_DATA.glossary" :key="g.term" class="row-item row-compact" v-reveal>
                 <dt class="row-head row-title">{{ g.term }}</dt>
                 <dd class="row-body">{{ g.text }}</dd>
               </div>
@@ -603,7 +617,7 @@ const App = {
           </div>
         </div>
 
-        <nav class="learn-wrap pager" aria-label="Otras lecturas">
+        <nav class="learn-wrap pager" aria-label="Otras lecturas" v-reveal>
           <a v-if="prevTopic" class="pager-link pager-prev" :href="'#guia/' + prevTopic.id" @click.prevent="openTopic(prevTopic.id)">
             <span class="pager-dir">← Anterior</span><span class="pager-name">{{ prevTopic.title }}</span>
           </a>
@@ -1041,4 +1055,4 @@ const App = {
   },
 };
 
-createApp(App).component('AFig', Fig).mount('#app');
+createApp(App).component('AFig', Fig).directive('reveal', vReveal).mount('#app');
