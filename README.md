@@ -12,7 +12,8 @@ index.html        Estructura y librerías
 app.js            Aplicación Vue (filtros, mapa, detalle, la Guía con rutas #guia/tema)
 places.js         Horarios OSM y Google Places opcional
 config.js         Clave opcional de Google Places
-data/photos.js    Fotos propias de locales (opcional, por id de OSM)
+data/photos.js    Fotos propias de locales (opcional, por id de OSM; se gestiona con scripts/add_photo.py)
+data/links.js     Instagram y web de cada local (GENERADO por scripts/build_links.py)
 data/images.js    Fotos de la Guía (Wikimedia Commons) con autor y licencia
 data/illustrations.js  Dibujos SVG: diagramas de métodos, cortes de bebidas, cafetería genérica
 img/aprende/      Fotos recortadas (2 tamaños)
@@ -29,6 +30,14 @@ Para verlo en local: `python -m http.server 8000` y abre http://localhost:8000.
 Al abrir el mapa y al moverlo, la app consulta la **Overpass API** de OpenStreetMap (sin clave) y añade las cafeterías (`amenity=cafe`) de la zona visible. Los locales de `data/cafes.js` son los curados (con tipo, métodos, snacks y fuentes) y tienen prioridad; los que llegan en vivo aparecen como *por confirmar*. Si Overpass no responde, se muestran solo los guardados.
 
 Los horarios simples (`opening_hours`) de los locales en vivo se convierten en el momento. La última búsqueda se guarda en el navegador para que la lista aparezca al instante.
+
+### Fotos sin tarjeta
+- **No se copian fotos de Instagram ni de Google Maps:** son de sus autores (el local o sus clientes), sus términos prohíben la descarga automática y publicarlas sin permiso infringe los derechos de autor.
+- **Botón «Instagram del local» y «Sitio web»** en la ficha, con los enlaces oficiales que los colaboradores de OpenStreetMap ya registraron (`data/links.js`, generado con `python -X utf8 scripts/build_links.py`; hoy 38 locales con Instagram). Así se ven sus fotos en su propia cuenta.
+- **Fotos con permiso:** pídelas al local (suelen decir que sí) o toma las tuyas y regístralas con
+  `python -X utf8 scripts/add_photo.py <id_osm> foto.jpg --author "Nombre o @cuenta del local" --url https://instagram.com/cuenta`
+  (recorta y comprime la imagen y la añade a `data/photos.js`; tiene prioridad sobre cualquier otra fuente).
+- Mensaje para pedirla: *«¡Hola! Tengo un mapa gratuito de cafeterías de Caracas (jesusobando32.github.io/cafecito-caracas) y me encantaría mostrar una foto de su local con el crédito y un enlace a su Instagram. ¿Nos autorizan a usar una foto de su cuenta o nos pueden enviar una?»*
 
 ### Fotos, horario y valoración desde Google Maps (opcional)
 Google no permite copiar fotos de sus páginas (tienen autor y derechos), pero su API oficial **Places (New)** sí las entrega con permiso y atribución. La app ya está conectada: solo falta la clave.

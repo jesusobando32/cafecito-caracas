@@ -216,6 +216,7 @@ function liveToCafe(el) {
     neighborhood, address: street || (neighborhood !== 'Sin barrio' ? neighborhood : 'Dirección sin confirmar'),
     lat, lng, schedule: parseOsmHours(t.opening_hours), methods: [], drinks: [], snacks: [], description: '',
     sources: [`https://www.openstreetmap.org/${el.type}/${el.id}`],
+    links: linksFromTags(t),
   };
 }
 
@@ -362,7 +363,8 @@ const App = {
 
           <div class="detail-actions">
             <a class="btn btn-primary" :href="directionsUrl(activeCafe)" target="_blank" rel="noopener">Cómo llegar</a>
-            <a v-if="activeCafe.google && activeCafe.google.website" class="btn" :href="activeCafe.google.website" target="_blank" rel="noopener">Sitio web</a>
+            <a v-if="activeLinks.instagram" class="btn" :href="activeLinks.instagram" target="_blank" rel="noopener">Instagram del local</a>
+            <a v-if="activeLinks.website" class="btn" :href="activeLinks.website" target="_blank" rel="noopener">Sitio web</a>
             <a class="btn" :href="issueUrl(activeCafe)" target="_blank" rel="noopener">¿Falta algo? Aporta datos</a>
           </div>
 
@@ -792,6 +794,13 @@ const App = {
         googleLoading.value = false;
       }
     });
+    // Instagram y web oficiales del local (OSM); la web de Google, si hay clave, se usa cuando OSM no la tiene
+    const activeLinks = computed(() => {
+      const c = activeCafe.value;
+      if (!c) return {};
+      const own = c.links || CAFE_LINKS[c.osm] || {};
+      return { instagram: own.instagram, website: own.website || (c.google && c.google.website) || null };
+    });
     const activeStatus = computed(() => activeCafe.value ? getStatus(activeCafe.value.schedule) : null);
     const todayId = computed(() => caracasNow().day);
 
@@ -1069,7 +1078,7 @@ const App = {
       liveState, liveText, refreshLive, googleLoading,
       repoUrl: REPO_URL, totalCount, cupIcon: CUP_SVG,
       NAV, navActive, goNav, menuOpen, LEARN_TOPICS, wikiEl, sidebarEl, topic, topicArticle, topicToc, prevTopic, nextTopic, openTopic, scrollToId,
-      cafePhoto, photoFailed, mapsUrl, mapsPinUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
+      activeLinks, cafePhoto, photoFailed, mapsUrl, mapsPinUrl, dayRanges, CAFE_FALLBACK_SVG: ILLUSTRATIONS.CAFE_FALLBACK_SVG,
       topicHero, sectionImage, CREDITS, METHOD_IMAGES, DRINK_IMAGES,
       METHOD_DIAGRAMS: ILLUSTRATIONS.METHOD_DIAGRAMS, drinkSvg: ILLUSTRATIONS.drinkSvg, drinkLegend: ILLUSTRATIONS.drinkLegend,
       view, sheet, onHandleDown, onHandleUp, onHandleCancel, onSearchFocus,

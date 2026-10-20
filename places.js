@@ -67,6 +67,31 @@ function parseOsmHours(oh) {
   return Object.keys(byDay).length ? scheduleFromByDay(byDay) : null;
 }
 
+// ── Enlaces oficiales de cada local (de las etiquetas de OpenStreetMap: contact:instagram, website…) ──
+// Mismas reglas que scripts/build_links.py. Solo se enlaza a la cuenta del local; no se copian fotos.
+function instagramUrl(value) {
+  if (!value) return null;
+  const v = String(value).trim();
+  const m = v.match(/^https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9._]{1,30})\/?(?:[?#].*)?$/i);
+  const user = m ? m[1] : v.replace(/^@/, '');
+  if (!/^[A-Za-z0-9._]{1,30}$/.test(user) || ['p', 'reel', 'explore', 'accounts'].includes(user.toLowerCase())) return null;
+  return `https://www.instagram.com/${user}/`;
+}
+function webUrl(value) {
+  if (!value) return null;
+  let v = String(value).trim();
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  return /instagram\.com/i.test(v) || !/^https?:\/\/[^\s]+\.[^\s]+$/.test(v) ? null : v;
+}
+function linksFromTags(t) {
+  const ig = instagramUrl(t['contact:instagram'] || t.instagram) || (/instagram\.com/i.test(t.website || '') ? instagramUrl(t.website) : null);
+  const web = webUrl(t.website || t['contact:website']);
+  const out = {};
+  if (ig) out.instagram = ig;
+  if (web) out.website = web;
+  return out;
+}
+
 // ── Google Places (API "Places API (New)") ───────────────────
 const GOOGLE_CONFIG = window.CAFECITO_CONFIG || {};
 const GOOGLE_KEY = GOOGLE_CONFIG.googlePlacesKey || '';
